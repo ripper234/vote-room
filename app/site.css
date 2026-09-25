@@ -66,13 +66,14 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .party-card[data-reaction="dislike"]:hover,.party-card[data-reaction="dislike"]:focus-within { opacity: 1; }
 .party-band { align-self: stretch; background: var(--party-accent); }
 .party-card-link { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: center; align-self: stretch; color: inherit; text-decoration: none; }
+.party-card-link::after { content: ""; position: absolute; inset: 0; }
 .party-card-link:hover h3 { text-decoration: underline; text-underline-offset: 3px; }
 .party-card-main { padding: 17px 0; }
 .party-card h3 { margin: 0 0 6px; font-size: 1.28rem; }
 .party-card p { margin: 0; color: #63738b; font-size: .9rem; line-height: 1.4; }
 .party-card .meta { margin-top: 9px; font-size: .78rem; color: #516cc1; font-weight: 700; }
 .arrow { font-size: 1.65rem; color: #7183a3; margin-left: 20px; }
-.party-votes { display: grid; gap: 7px; margin-left: 16px; }
+.party-votes { position: relative; z-index: 1; display: grid; gap: 7px; margin-left: 16px; }
 .vote-button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 6px 9px; border: 1px solid #d0daea; border-radius: 8px; background: #fff; color: #4b5f7a; font-size: .78rem; font-weight: 700; white-space: nowrap; }
 .vote-button:hover { border-color: #8fa5cc; color: #1e3975; }
 .vote-button[aria-pressed="true"] { border-color: #3153c4; background: #eaf0ff; color: #1d3db3; }
