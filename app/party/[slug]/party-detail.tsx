@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Party } from "@/lib/parties";
+import type { Party, PartyVideo, PublicVoice } from "@/lib/parties";
 import { SaveIndicator, useDecision } from "@/lib/use-decision";
 
 const statuses = [
@@ -18,13 +18,19 @@ const assessments = [
   { value: "misaligned", label: "נראה לא תואם" },
 ];
 
-function Video({ video }: { video: Party["videos"][number] }) {
+function Video({ video }: { video: PartyVideo }) {
+  const segment = video.excerpt;
+  const params = new URLSearchParams({ rel: "0" });
+  if (segment) {
+    params.set("start", String(segment.start));
+    params.set("end", String(segment.end));
+  }
   return (
     <div>
       <div className="video-frame">
         <iframe
-          src={`https://www.youtube-nocookie.com/embed/${video.id}?start=0&end=360&rel=0`}
-          title={`${video.name}: ${video.title}`}
+          src={`https://www.youtube-nocookie.com/embed/${video.id}?${params.toString()}`}
+          title={`${video.name}: ${video.title}, ${video.duration}`}
           loading="lazy"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           referrerPolicy="strict-origin-when-cross-origin"
@@ -32,9 +38,25 @@ function Video({ video }: { video: Party["videos"][number] }) {
         />
       </div>
       <p className="muted small" style={{ margin: "11px 0 0", lineHeight: 1.5 }}>
-        שש הדקות הראשונות מתוך {video.title}, {video.date}.{" "}
-        <a href={`https://www.youtube.com/watch?v=${video.id}`} target="_blank" rel="noopener noreferrer">לנאום או לראיון המלא ↗</a>
+        {video.name} · {video.title} · {video.duration} · {video.date}.
+        {segment && " קטע מתוזמן מתוך סרטון ארוך יותר."}
+        {" "}<a href={`https://www.youtube.com/watch?v=${video.id}`} target="_blank" rel="noopener noreferrer">למקור המלא ↗</a>
       </p>
+    </div>
+  );
+}
+
+function VoiceColumn({ title, items, empty }: { title: string; items: PublicVoice[]; empty: string }) {
+  return (
+    <div className="voice-column">
+      <h3>{title}</h3>
+      {items.length ? <ul className="voice-list">{items.map((item) => (
+        <li key={`${item.person}-${item.date}`}>
+          <strong>{item.person}</strong><span className="muted small">{item.role} · {item.date}</span>
+          <p>{item.statement}</p>
+          <a href={item.url} target="_blank" rel="noopener noreferrer">למקור ההצהרה ↗</a>
+        </li>
+      ))}</ul> : <p className="muted small">{empty}</p>}
     </div>
   );
 }
@@ -65,11 +87,14 @@ export default function PartyDetail({ party }: { party: Party }) {
   const aligned = state?.priorities.filter((tag) => ratings[tag] === "aligned") ?? [];
   const misaligned = state?.priorities.filter((tag) => ratings[tag] === "misaligned") ?? [];
   const unclear = state?.priorities.filter((tag) => ratings[tag] === "unclear") ?? [];
+  const featuredVideos = party.featuredVideos ?? [];
+  const supportingVoices = party.publicVoices?.filter((voice) => voice.stance === "support") ?? [];
+  const opposingVoices = party.publicVoices?.filter((voice) => voice.stance === "against") ?? [];
   return (
     <main className="shell">
       <div className="detail-hero" style={{ "--party-accent": party.color } as React.CSSProperties}>
         <a href="/map" onClick={goBack} style={{ color: "#c7d8ff", textUnderlineOffset: 4 }}>← חזרה למפה שלי</a>
-        <div className="eyebrow" style={{ marginTop: 22 }}>דף רשימה · מידע עד 25.9.2026</div>
+        <div className="eyebrow" style={{ marginTop: 22 }}>דף רשימה · מידע עד 26.9.2026</div>
         <h1>{party.name}</h1>
         <p>{party.leaders} · {party.summary}</p>
       </div>
@@ -77,6 +102,7 @@ export default function PartyDetail({ party }: { party: Party }) {
         <div className="panel-header"><h2 id="brief-title">בקצרה</h2><SaveIndicator status={saveState === "error" ? "error" : draft !== null && draft !== note ? "saving" : saveState} retry={retry} /></div>
         <div className="panel-body">
           <p className="brief-lead">{party.tldr}</p>
+          {party.electionStatus && <p className="election-status"><strong>מצב ההתמודדות: </strong>{party.electionStatus.text}{" "}<a href={party.electionStatus.url} target="_blank" rel="noopener noreferrer">מקור ↗</a></p>}
           {state && (
             <>
             <p className="muted small" style={{ marginTop: -6, lineHeight: 1.5 }}>
@@ -119,16 +145,26 @@ export default function PartyDetail({ party }: { party: Party }) {
       <div className="detail-grid">
         <div className="section-stack">
           <section className="panel">
-            <div className="panel-header"><h2>להקשיב לאנשים</h2></div>
+            <div className="panel-header"><h2>להקשיב לאנשים · 2–5 דקות</h2></div>
             <div className="panel-body">
-              {party.videos.length > 1 ? (
-                <Tabs defaultValue={party.videos[0].id}>
+              {featuredVideos.length > 1 ? (
+                <Tabs defaultValue={featuredVideos[0].id}>
                   <TabsList aria-label="בחר דובר" style={{ marginBottom: 10 }}>
-                    {party.videos.map((video) => <TabsTrigger key={video.id} value={video.id}>{video.name}</TabsTrigger>)}
+                    {featuredVideos.map((video) => <TabsTrigger key={video.id} value={video.id}>{video.name}</TabsTrigger>)}
                   </TabsList>
-                  {party.videos.map((video) => <TabsContent key={video.id} value={video.id}><Video video={video} /></TabsContent>)}
+                  {featuredVideos.map((video) => <TabsContent key={video.id} value={video.id}><Video video={video} /></TabsContent>)}
                 </Tabs>
-              ) : <Video video={party.videos[0]} />}
+              ) : featuredVideos.length ? <Video video={featuredVideos[0]} /> : <p className="muted small">עדיין לא נבחר כאן קטע קצר שאפשר לאמת. סרטונים ארוכים יותר מופיעים בהמשך הדף.</p>}
+            </div>
+          </section>
+          <section className="panel" aria-labelledby="voices-title">
+            <div className="panel-header"><h2 id="voices-title">מי תומך, מי מסתייג</h2></div>
+            <div className="panel-body">
+              <p className="muted small" style={{ marginTop: 0, lineHeight: 1.55 }}>הצהרות אישיות פומביות עם תאריך ומקור. זו דגימה חלקית, לא מדגם מייצג ולא המלצת האתר. ביקורת על מדיניות אינה מוצגת כאן כהתנגדות להצבעה.</p>
+              <div className="voice-grid">
+                <VoiceColumn title="הביעו תמיכה או כוונת הצבעה" items={supportingVoices} empty="עדיין לא אומתה כאן הצהרת תמיכה אישית." />
+                <VoiceColumn title="הצהירו שלא יצביעו לרשימה" items={opposingVoices} empty="עדיין לא אומתה כאן הצהרה אישית נגד הצבעה לרשימה." />
+              </div>
             </div>
           </section>
           <section className="panel">
@@ -183,6 +219,17 @@ export default function PartyDetail({ party }: { party: Party }) {
               {party.people.length ? <div className="link-list">{party.people.map((person) => (
                 <a className="outlink" href={person.x} key={person.name} target="_blank" rel="noopener noreferrer">{person.name} ב־X ↗</a>
               ))}</div> : <p className="muted small">לא אומת חשבון אישי של המנהיג בדף הזה. הראיון למעלה הוא דרך להכיר את קולו.</p>}
+            </div>
+          </section>
+          <section className="panel" id="more-videos">
+            <div className="panel-header"><h2>עוד לצפייה</h2></div>
+            <div className="panel-body">
+              <p className="muted small">נאומים וראיונות נוספים להעמקה. אורכם עשוי לעלות על חמש דקות:</p>
+              <ul className="source-list">
+                {party.videos.map((video) => (
+                  <li key={video.id}><a href={`https://www.youtube.com/watch?v=${video.id}`} target="_blank" rel="noopener noreferrer">{video.name}: {video.title} ↗</a></li>
+                ))}
+              </ul>
             </div>
           </section>
         </div>

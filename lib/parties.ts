@@ -1,3 +1,13 @@
+export type PartyVideo = { name: string; title: string; id: string; date: string; duration: string; excerpt?: { start: number; end: number } };
+export type PublicVoice = {
+  person: string;
+  role: string;
+  stance: "support" | "against";
+  statement: string;
+  date: string;
+  url: string;
+};
+
 export type Party = {
   slug: string;
   name: string;
@@ -7,11 +17,14 @@ export type Party = {
   summary: string;
   tldr: string;
   context: string;
+  electionStatus?: { text: string; url: string };
   manifestoSummary: string;
   program?: { label: string; url: string };
   extraSources?: { label: string; url: string }[];
   highlights: { topic: string; text: string; url: string }[];
   videos: { name: string; title: string; id: string; date: string }[];
+  featuredVideos?: PartyVideo[];
+  publicVoices?: PublicVoice[];
   people: { name: string; x: string }[];
   check: string[];
 };
@@ -40,6 +53,10 @@ export const parties: Party[] = [
       { name: "נפתלי בנט", title: "נאום בכנס ״מנצחים ביחד״", id: "vTB0FJ1kqJA", date: "12.5.2026" },
       { name: "יאיר לפיד", title: "נאום באותו כנס", id: "YSfX3YG-lWs", date: "12.5.2026" },
     ],
+    featuredVideos: [
+      { name: "נפתלי בנט", title: "שיחה עם הציבור בחולון", id: "VqRghIjij_E", date: "5.8.2026", duration: "4:02" },
+      { name: "יאיר לפיד", title: "על תקציב המדינה בכנסת", id: "jdS8QRtkX6s", date: "28.1.2026", duration: "3:43" },
+    ],
     people: [
       { name: "נפתלי בנט", x: "https://x.com/naftalibennett" },
       { name: "יאיר לפיד", x: "https://x.com/yairlapid" },
@@ -67,6 +84,12 @@ export const parties: Party[] = [
     videos: [
       { name: "גדי איזנקוט", title: "נאום השקת מסע הבחירות", id: "AzbeSJB8JUs", date: "30.6.2026" },
     ],
+    featuredVideos: [
+      { name: "גדי איזנקוט", title: "מדוע הקים את ישר! ומה ירצה לקדם", id: "AzbeSJB8JUs", date: "30.6.2026", duration: "3:53", excerpt: { start: 452, end: 685 } },
+    ],
+    publicVoices: [
+      { person: "אפרים ארליך", role: "נצ״מ בדימוס", stance: "support", statement: "אמר בשיחה ברדיו שיצביע לגדי איזנקוט, לצד תמיכה בצעד של יואב סגלוביץ׳ לחבור לרע״ם.", date: "6.9.2026", url: "https://103fm.yaniv.tv/media/741337/%D7%91%D7%9E%D7%93%D7%99%D7%A0%D7%AA-%D7%94%D7%92%D7%9E%D7%93%D7%99%D7%9D-%D7%A8%D7%A2%D7%A9-%D7%9E%D7%94%D7%95%D7%9E%D7%94" },
+    ],
     people: [{ name: "גדי איזנקוט", x: "https://x.com/gadi_eisenkot" }],
     check: ["מה פירוש ״משילות״ בתכנית מול עצמאות מוסדות המשפט?", "כיצד מתורגמים הצעדים הכלכליים לתקציב?", "האם עמדת הקואליציה שלו תואמת את הקווים האדומים שלך?"],
   },
@@ -89,6 +112,13 @@ export const parties: Party[] = [
     ],
     videos: [
       { name: "יאיר גולן", title: "ראיון בכנס INSS", id: "H0S_8YTEDZo", date: "27.7.2026" },
+    ],
+    featuredVideos: [
+      { name: "יאיר גולן", title: "על שנת 2026 כשנת מפנה ותיקון", id: "IJCFSk1ogDU", date: "29.12.2025", duration: "3:21" },
+    ],
+    publicVoices: [
+      { person: "טובה הרצל", role: "שגרירה לשעבר", stance: "support", statement: "כתבה שתצביע לדמוקרטים משום שהיא מבקשת לחזק עמדה מדינית ברורה, גם אם תשמח לראות את איזנקוט בראשות הממשלה.", date: "7.7.2026", url: "https://www.zman.co.il/701195/" },
+      { person: "בן כספית", role: "עיתונאי ובעל טור", stance: "against", statement: "כתב שלא יצביע לדמוקרטים כי יאיר גולן ממוקם שמאלה ממנו, אף שהוא מעריך את גולן ואת חלק מאנשי הרשימה.", date: "7.8.2026", url: "https://www.walla.co.il/news/opinions/3859036" },
     ],
     people: [{ name: "יאיר גולן", x: "https://x.com/YairGolan1" }],
     check: ["איזו פשרה קואליציונית תהיה מקובלת עליך?", "איזה סעיף במצע הוא תנאי מבחינתך?", "מה ההבדל בין הכיוון הערכי לבין היכולת לבצע?"],
@@ -113,6 +143,12 @@ export const parties: Party[] = [
     videos: [
       { name: "אביגדור ליברמן", title: "ראיון בכנס INSS", id: "UDlqqiYEOOE", date: "27.7.2026" },
     ],
+    featuredVideos: [
+      { name: "אביגדור ליברמן", title: "מדוע הוא מבקש להוביל את המדינה", id: "AjS3_Y-6pnI", date: "7.9.2026", duration: "4:52" },
+    ],
+    publicVoices: [
+      { person: "אילן כץ", role: "אל״מ במיל׳ ועורך דין", stance: "support", statement: "כתב שיצביע לליברמן ולישראל ביתנו, בין היתר בשל ניסיונו הביטחוני ועמדתו על שירות לכל.", date: "30.6.2026", url: "https://www.news1.co.il/Archive/0026-D-184604-00.html" },
+    ],
     people: [{ name: "אביגדור ליברמן", x: "https://x.com/AvigdorLiberman" }],
     check: ["מה עמדתה המעשית לגבי שותפים קואליציוניים?", "אילו צעדים במצע חשובים לך?", "האם יש פער בין ההבטחות לבין היכולת לממשן?"],
   },
@@ -128,7 +164,16 @@ export const parties: Party[] = [
     manifestoSummary: "באתר הרשמי מוצגים עקרונות כלליים ורשימת המועמדים לכנסת ה־26. לא איתרנו שם מסמך מצע 2026 מפורט שמשווה תחום לתחום.",
     program: { label: "רשימת המועמדים באתר הרשמי", url: "https://www.likud.org.il/בחירות/כנסת/knesset26" },
     highlights: [],
-    videos: [{ name: "בנימין נתניהו", title: "דברים בערוץ הרשמי", id: "J5-qzqsRwxY", date: "30.6.2026" }],
+    videos: [
+      { name: "בנימין נתניהו", title: "הצהרה על המצב בלבנון, 2:13 דקות", id: "J9nXLpLo7yg", date: "14.9.2026" },
+      { name: "בנימין נתניהו", title: "ראיון בערוץ 14", id: "J5-qzqsRwxY", date: "30.6.2026" },
+    ],
+    featuredVideos: [
+      { name: "בנימין נתניהו", title: "על אלטלנה והימנעות ממלחמת אחים", id: "sO4Clz1j2Pg", date: "24.8.2026", duration: "4:45" },
+    ],
+    publicVoices: [
+      { person: "אלי אוחנה", role: "כדורגלן עבר ומגיש רדיו", stance: "support", statement: "אמר שיצביע לליכוד גם אם נתניהו יעזוב את המפלגה; תמיכתו היא בליכוד כמפלגה.", date: "7.5.2026", url: "https://x.com/radio103fm/status/2052283347099898272" },
+    ],
     people: [{ name: "בנימין נתניהו", x: "https://x.com/netanyahu" }],
     check: ["איזה הישג של הממשלה חשוב לך במיוחד?", "מה היית רוצה שייעשה אחרת?", "איזו התחייבות קונקרטית תרצה לראות לבחירות האלה?"],
   },
@@ -144,7 +189,13 @@ export const parties: Party[] = [
     manifestoSummary: "עמוד ״מי אנחנו״ באתר המפלגה מציג כיוון כללי. הוא אינו מחליף מצע מפורט ומעודכן לכל תחומי המדיניות.",
     program: { label: "על המפלגה באתר הרשמי", url: "https://www.ozma-yeudit.co.il/מי-אנחנו/" },
     highlights: [],
-    videos: [{ name: "איתמר בן גביר", title: "מסר בחירות של המפלגה", id: "3_iRZGlZAvw", date: "16.8.2026" }],
+    videos: [{ name: "איתמר בן גביר", title: "ראיון על מדיניותו", id: "vaqbl1iWRik", date: "20.9.2026" }],
+    featuredVideos: [
+      { name: "איתמר בן גביר", title: "שיחה בכנס ירושלים", id: "bfQ76_h0NkY", date: "7.9.2026", duration: "2:45" },
+    ],
+    publicVoices: [
+      { person: "ברוך מרזל", role: "פעיל ימין ושותף פוליטי בעבר", stance: "against", statement: "אמר בריאיון שלא יצביע לעוצמה יהודית בבחירות הקרובות, משום שלדעתו בן גביר התרחק מעמדותיו בעבר.", date: "31.8.2026", url: "https://www.emess.co.il/radio/1923111" },
+    ],
     people: [{ name: "איתמר בן גביר", x: "https://x.com/itamarbengvir" }],
     check: ["אילו תוצאות בתחום הביטחון האישי חשובות לך?", "מהו הגבול בין כוח שלטוני לבין ביקורת עליו?", "מהי הפשרה הקואליציונית האפשרית מבחינתך?"],
   },
@@ -167,6 +218,10 @@ export const parties: Party[] = [
       { name: "בצלאל סמוטריץ׳", title: "ראיון", id: "q3MZdt_Jk7U", date: "2026" },
       { name: "משה פייגלין", title: "ראיון", id: "Hn8fhh2SEZM", date: "11.9.2026" },
     ],
+    featuredVideos: [
+      { name: "בצלאל סמוטריץ׳", title: "דברים בישיבת סיעה", id: "bnrGE6vajNs", date: "19.1.2026", duration: "2:20" },
+      { name: "משה פייגלין", title: "על תפקיד זהות בממשלה", id: "gMSpH57itBU", date: "29.8.2026", duration: "2:55" },
+    ],
     people: [
       { name: "בצלאל סמוטריץ׳", x: "https://x.com/bezalelsm" },
       { name: "משה פייגלין", x: "https://x.com/moshefeiglin" },
@@ -185,7 +240,16 @@ export const parties: Party[] = [
     manifestoSummary: "בשלב זה אין בדף מצע רשמי מפורט ומאומת לבחירות 2026. הקישור מוביל לרשימה שהוגשה, והסרטון מאפשר להקשיב לדברי דרעי.",
     program: { label: "הרשימות שהוגשו לכנסת", url: "https://www.knesset.tv/main-articles/61384/94592/" },
     highlights: [],
-    videos: [{ name: "אריה דרעי", title: "שיחה בפודקאסט ״מפגש״", id: "Ld-F2nVF6ow", date: "2026" }],
+    videos: [
+      { name: "אריה דרעי", title: "ראיון לקראת הבחירות בערוץ 14", id: "FT7v-SSEGW8", date: "26.8.2026" },
+      { name: "אריה דרעי", title: "שיחה בפודקאסט ״מפגש״", id: "Ld-F2nVF6ow", date: "2026" },
+    ],
+    featuredVideos: [
+      { name: "אריה דרעי", title: "פתיחת ראיון לקראת הבחירות", id: "FT7v-SSEGW8", date: "26.8.2026", duration: "4:00", excerpt: { start: 0, end: 240 } },
+    ],
+    publicVoices: [
+      { person: "הרב יצחק יוסף", role: "הרב הראשי לשעבר", stance: "support", statement: "קרא באירוע בעכו לתמוך בנציגי ש״ס בהובלת דרעי, בשל מחויבותם לדרכו הדתית.", date: "16.9.2026", url: "https://www.jdn.co.il/news/2730089/" },
+    ],
     people: [{ name: "אריה דרעי", x: "https://x.com/ariyederi" }],
     check: ["מהן הדרישות הקואליציוניות החשובות של ש״ס?", "אילו הצעות כלכליות וחברתיות מעשיות הוצגו?", "איפה עשויה להיות פשרה ואיפה קו אדום?"],
   },
@@ -202,6 +266,9 @@ export const parties: Party[] = [
     program: { label: "הרשימה שהוגשה לכנסת", url: "https://www.knesset.tv/main-articles/61384/94592/" },
     highlights: [],
     videos: [{ name: "יעקב אשר", title: "ראיון על שותפות קואליציונית", id: "i6MWJ9fUWa8", date: "21.7.2026" }],
+    featuredVideos: [
+      { name: "יעקב אשר", title: "נאום בכנסת על סוגיות דת ומדינה", id: "Fi1yeP8PAdI", date: "29.1.2026", duration: "2:47" },
+    ],
     people: [],
     check: ["מה התנאים לשותפות בממשלה?", "איזה נוסח של חוק גיוס תקדם הרשימה?", "מהי עמדת הנציגים בנושאים החשובים לך?"],
   },
@@ -218,6 +285,9 @@ export const parties: Party[] = [
     program: { label: "אתר עמך ישראל", url: "https://amchaisrael.co.il/" },
     highlights: [],
     videos: [{ name: "עופר וינטר", title: "השקת הרשימה", id: "yFkwVcLi_W4", date: "2026" }],
+    featuredVideos: [
+      { name: "עופר וינטר", title: "על כיוון הרשימה והמלצתו לראש הממשלה", id: "mV-ikAcrqZk", date: "27.8.2026", duration: "3:55" },
+    ],
     people: [],
     check: ["מהם התנאים המפורשים לכניסה לקואליציה?", "כיצד תיראה תכנית השירות לכל?", "איזו השפעה תהיה לרשימה חדשה?"],
   },
@@ -230,10 +300,14 @@ export const parties: Party[] = [
     summary: "רשימה בראשות מנסור עבאס",
     tldr: "עבאס מדגיש שותפות אזרחית והשפעה דרך השתתפות בממשלה. ההחלטה על שותפות עתידית תלויה בהסכמות פוליטיות.",
     context: "אם נושא השותפות עם מפלגות ערביות חשוב לך, כדאי לשמוע את עבאס במילותיו ולבדוק גם את עמדות השותפים האפשריים.",
+    electionStatus: { text: "ועדת הבחירות החליטה ב־23.9 לפסול את רשימת רע״ם. נכון ל־26.9 זו אינה הכרעה סופית; כשירות הרשימה תלויה בהכרעת בית המשפט העליון.", url: "https://www.knesset.tv/main-articles/61384/94753/" },
     manifestoSummary: "לא איתרנו כאן מצע מפורט ועדכני של הרשימה לבחירות 2026. מקור המועמדים והראיון זמינים להמשך בדיקה.",
     program: { label: "הרשימה שהוגשה לכנסת", url: "https://www.knesset.tv/main-articles/61384/94592/" },
     highlights: [],
     videos: [{ name: "מנסור עבאס", title: "ראיון בכנס INSS", id: "zrdkNa3s0f0", date: "27.7.2026" }],
+    featuredVideos: [
+      { name: "מנסור עבאס", title: "משיב לשאלה על התנועה האסלאמית", id: "Rb-TKn-YqUU", date: "24.11.2025", duration: "4:55" },
+    ],
     people: [{ name: "מנסור עבאס", x: "https://x.com/mnsorabbas" }],
     check: ["איזה סוג שותפות קואליציונית אפשרי מבחינתך?", "אילו יעדים אזרחיים מציעה הרשימה?", "מה תהיה יכולתה להשפיע בממשלה או באופוזיציה?"],
   },
@@ -246,6 +320,7 @@ export const parties: Party[] = [
     summary: "רשימה משותפת של כמה מסגרות פוליטיות",
     tldr: "יוסף ג׳בארין עומד בראש הרשימה שהוגשה. עקרונות חד״ש זמינים, אך הם אינם בהכרח מצע מוסכם של כל השותפים.",
     context: "לרשימה כמה הנהגות וגישות. רצוי לבחון גם את ההסכמות המשותפות וגם את ההבדלים בין השותפים.",
+    electionStatus: { text: "ועדת הבחירות החליטה ב־23.9 לפסול את הרשימה המשותפת ואת מועמדות סאמי אבו שחאדה ועופר כסיף. נכון ל־26.9 ההכרעה הסופית עוד בפני בית המשפט העליון.", url: "https://www.knesset.tv/main-articles/61384/94753/" },
     manifestoSummary: "עמוד העקרונות של חד״ש עוסק בשוויון, שלום, זכויות עובדים ודמוקרטיה. אין לייחס אותו במלואו לכל הרשימה המשותפת בלי מסמך משותף עדכני.",
     program: { label: "עקרונות חד״ש", url: "https://hadash.org.il/" },
     extraSources: [{ label: "מועמדי חד״ש ברשימה", url: "https://hadash.org.il/list" }],
@@ -253,6 +328,10 @@ export const parties: Party[] = [
       { topic: "דמוקרטיה וחוקה", text: "עקרונות חד״ש מדגישים שוויון אזרחי ודמוקרטיה; יש לבדוק מה אומץ בידי הרשימה כולה.", url: "https://hadash.org.il/" },
     ],
     videos: [{ name: "יוסף ג׳בארין", title: "ראיון בערוץ חד״ש", id: "AMnEOCd71Uo", date: "2026" }],
+    featuredVideos: [
+      { name: "יוסף ג׳בארין", title: "על הקמת הרשימה המשותפת", id: "GPfYVwKkd48", date: "14.6.2026", duration: "4:07" },
+      { name: "אחמד טיבי", title: "על הקמת רשימה משותפת", id: "4rRnPwT35V0", date: "8.6.2026", duration: "2:03" },
+    ],
     people: [
       { name: "יוסף ג׳בארין", x: "https://x.com/DrJabareen" },
       { name: "אחמד טיבי", x: "https://x.com/Ahmad_tibi" },
@@ -277,6 +356,9 @@ export const parties: Party[] = [
       { topic: "דת ומדינה", text: "מסמך העקרונות מ־2025 מדבר על זהות יהודית לצד חירות אישית ועל סמכות מקומית לעצב את השבת.", url: "https://kachollavan.org.il/wp-content/uploads/2025/07/20527_3_A5_Hoveret_Ekronot_ONE_PAGE_A.pdf" },
     ],
     videos: [{ name: "בני גנץ", title: "שיחה בפודקאסט", id: "ib2581vhsn8", date: "2026" }],
+    featuredVideos: [
+      { name: "בני גנץ", title: "על הקמת ממשלה חלופית", id: "HtyPrIkRd-8", date: "11.5.2026", duration: "3:43" },
+    ],
     people: [{ name: "בני גנץ", x: "https://x.com/gantzbe" }],
     check: ["עם מי תהיה מוכנה לשבת?", "מהם התנאים לממשלת הסכמות?", "אילו תכניות מפורטות פורסמו בתחומים החשובים לך?"],
   },
@@ -298,6 +380,10 @@ export const parties: Party[] = [
     videos: [
       { name: "יועז הנדל", title: "ראיון", id: "s7ROzA1HYSY", date: "2026" },
       { name: "ירון זליכה", title: "הרצאה על כלכלה", id: "gK0Wltq9rMs", date: "18.12.2025" },
+    ],
+    featuredVideos: [
+      { name: "יועז הנדל", title: "על תנאי שותפות בקואליציה", id: "UaTfJGFiJ8c", date: "11.9.2026", duration: "4:55" },
+      { name: "ירון זליכה", title: "על הגישה הכלכלית שלו ויישום שינוי", id: "nbP4sT1goAo", date: "14.9.2026", duration: "2:48" },
     ],
     people: [
       { name: "יועז הנדל", x: "https://x.com/YoazHendel1" },

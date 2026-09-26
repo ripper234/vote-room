@@ -36,7 +36,7 @@ export default function Welcome() {
         <div>
           <span className="welcome-kicker">חדר בחירה · דקה להתחיל</span>
           <h1 id="welcome-title">המפלגות, דרך הדברים שחשובים לך.</h1>
-          <p>לכל רשימה: תקציר מותאם, סרטונים של המובילים וקישורים לעמודים האישיים שלהם כשישנם. מסמנים מה חשוב לך ושומרים את ההתלבטות להמשך.</p>
+          <p>לכל רשימה: תקציר מותאם, קטעי וידאו קצרים של המובילים וקישורים לעמודים האישיים שלהם כשישנם. מסמנים מה חשוב לך ושומרים את ההתלבטות להמשך.</p>
           <Link className="button welcome-cta" href="/map">להתחיל במפה <span aria-hidden="true">←</span></Link>
           <span className="welcome-guest-note">אפשר להתחיל בלי חשבון.</span>
         </div>
@@ -54,7 +54,7 @@ export default function Welcome() {
         </div>
         <div className="welcome-feature-grid">
           <article className="welcome-feature"><span>01</span><h3>להתחיל מאיפה שנוח לך</h3><p>בוחרים נקודת פתיחה, רואים רשימות, ויכולים לעבור למסלול אחר או להציג את כולן בכל רגע.</p></article>
-          <article className="welcome-feature"><span>02</span><h3>להכיר ולעקוב אחרי האנשים</h3><p>בכל דף רשימה יש תקציר, מקורות וסרטונים של המובילים. כשנמצא חשבון אישי מתאים, יש קישור לעקוב אחריהם ברשתות החברתיות.</p></article>
+          <article className="welcome-feature"><span>02</span><h3>להכיר ולעקוב אחרי האנשים</h3><p>בכל דף רשימה יש תקציר, מקורות וקטע וידאו קצר של 2–5 דקות עם המובילים, כשנמצא קטע מתאים. אפשר לראות גם הצהרות תמיכה והתנגדות מתועדות וקישורים לחשבונות אישיים.</p></article>
           <article className="welcome-feature"><span>03</span><h3>לשמור גם את סימני השאלה</h3><p>מסמנים נושאים חשובים, התרשמות, הסתייגויות ומחשבות. אפשר לחזור ולעדכן; השינויים נשמרים לאורך זמן.</p></article>
         </div>
       </section>

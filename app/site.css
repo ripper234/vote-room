@@ -100,6 +100,8 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .detail-grid { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(285px,.85fr); gap: 20px; align-items: start; padding-bottom: 50px; }
 .brief-panel { margin-bottom: 20px; }
 .brief-lead { font-size: 1.14rem; font-weight: 700; line-height: 1.55; margin-bottom: 18px; max-width: 900px; }
+.election-status { border: 1px solid #d3b763; background: #fff8dd; border-radius: 10px; padding: 11px 14px; line-height: 1.55; font-size: .9rem; }
+.party-status-note { display: block; color: #795a0d; font-size: .83rem; font-weight: 700; margin: 7px 0; }
 .brief-grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 26px; border-top: 1px solid #e1e8f1; padding-top: 18px; }
 .brief-grid .source-list { gap: 12px; }
 .your-note { background: #f2f5fb; border-radius: 10px; padding: 12px; line-height: 1.5; word-break: break-word; }
@@ -109,6 +111,16 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .detail-hero p { margin: 0; color: #d5dff2; }
 .video-frame { position: relative; aspect-ratio: 16 / 9; background: #0d1830; border-radius: 12px; overflow: hidden; }
 .video-frame iframe { width: 100%; height: 100%; border: 0; }
+.voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.voice-column { border: 1px solid #dce4f0; background: #f9fbff; border-radius: 11px; padding: 15px; }
+.voice-column h3 { font-size: .98rem; margin: 0 0 13px; }
+.voice-column > p { margin: 0; line-height: 1.5; }
+.voice-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.voice-list li { border-top: 1px solid #e1e8f1; padding-top: 12px; line-height: 1.5; font-size: .9rem; }
+.voice-list li:first-child { border-top: 0; padding-top: 0; }
+.voice-list strong, .voice-list span { display: block; }
+.voice-list p { margin: 7px 0; }
+.voice-list a { font-size: .84rem; text-underline-offset: 3px; }
 .link-list { display: flex; flex-wrap: wrap; gap: 9px; }
 .outlink { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #cbd8e9; border-radius: 9px; padding: 9px 12px; text-decoration: none; font-weight: 700; font-size: .88rem; }
 .outlink:hover { background: #eaf0fb; }
@@ -164,7 +176,7 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .welcome-open-source p { margin: 0; color: #425574; line-height: 1.6; }
 .welcome-open-source .button { flex: none; text-decoration: none; }
 @media (max-width: 850px) {
-  .detail-grid,.brief-grid { grid-template-columns: 1fr; }
+  .detail-grid,.brief-grid,.voice-grid { grid-template-columns: 1fr; }
   .intro { align-items: start; }
   .date-stamp { display: none; }
   .welcome-feature-grid { grid-template-columns: 1fr; }

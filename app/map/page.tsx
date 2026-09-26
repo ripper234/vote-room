@@ -111,7 +111,7 @@ export default function Home() {
           <h1>{state?.orientation ? "מה חשוב לי בבחירות האלה?" : "מאיפה מתחילים?"}</h1>
           <p>{state?.orientation ? "בחר נושאים, הקשב לאנשים, ובדוק מה מתאים לך. אפשר לשנות כיוון בכל רגע." : "שאלה אחת מסדרת את נקודת הפתיחה. היא לא קובעת מה תצביעו."}</p>
         </div>
-        <span className="date-stamp">מידע על הרשימות: 25.9.2026</span>
+        <span className="date-stamp">מידע על הרשימות: 26.9.2026</span>
       </div>
       {!state ? (
         <section className="panel loading"><SaveIndicator status={saveState} retry={retry} /> <p style={{ margin: "16px 0 0" }}>טוען את המפה האישית שלך…</p></section>
@@ -168,6 +168,7 @@ export default function Home() {
                     <div className="party-card-main">
                       <h3>{party.name}</h3>
                       <p>{party.leaders} · {party.summary}</p>
+                      {party.electionStatus && <span className="party-status-note">ההתמודדות תלויה בהכרעת העליון · פירוט בדף הרשימה</span>}
                       <div className="personal-result">
                         <strong>{gradeFor(party.slug)}</strong>
                         <span>{party.highlights.find((item) => selected.includes(item.topic))
