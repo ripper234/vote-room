@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Party, PartyVideo, PublicVoice } from "@/lib/parties";
@@ -65,7 +66,10 @@ export default function PartyDetail({ party }: { party: Party }) {
   const { state, saveState, update, retry, waitForSave } = useDecision();
   const [draft, setDraft] = useState<string | null>(null);
   const [blockedBack, setBlockedBack] = useState(false);
-  useEffect(() => { setDraft(null); }, [party.slug]);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareDraft, setShareDraft] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
+  const shareTextarea = useRef<HTMLTextAreaElement>(null);
   const note = state?.partyNotes[party.slug] ?? "";
   useEffect(() => {
     if (draft === null || !state || draft === note) return;
@@ -92,6 +96,37 @@ export default function PartyDetail({ party }: { party: Party }) {
   const featuredVideos = party.featuredVideos ?? [];
   const supportingVoices = party.publicVoices?.filter((voice) => voice.stance === "support") ?? [];
   const opposingVoices = party.publicVoices?.filter((voice) => voice.stance === "against") ?? [];
+
+  function openShare() {
+    const impression = state?.partyStatus[party.slug];
+    const opening = impression === "positive" ? `כרגע ${party.name} נראית לי אפשרות רצינית.`
+      : impression === "concerned" ? `אני בודק/ת את ${party.name}, ויש לי גם הסתייגויות.`
+      : impression === "out" ? `בדקתי את ${party.name}, וכרגע היא פחות מתאימה לי.`
+      : `אני בודק/ת את ${party.name} לקראת הבחירות.`;
+    const lines = [opening];
+    if (state?.priorities.length) lines.push(`הנושאים שחשובים לי: ${state.priorities.join(" · ")}.`);
+    if (aligned.length) lines.push(`לפי ההתרשמות שלי, יש התאמה ב: ${aligned.join(" · ")}.`);
+    if (misaligned.length) lines.push(`יש לי פערים ב: ${misaligned.join(" · ")}.`);
+    if (unclear.length) lines.push(`עוד לא ברור לי לגבי: ${unclear.join(" · ")}.`);
+    if (!state?.priorities.length) lines.push("אני עדיין מנסה להבין מה מתאים לי ולמה.");
+    lines.push(`דף הרשימה והמקורות: ${window.location.origin}/party/${party.slug}`);
+    setShareDraft(lines.join("\n\n"));
+    setCopyMessage("");
+    setShareOpen(true);
+  }
+
+  async function copyShare() {
+    if (!shareDraft.trim()) { setCopyMessage("כתוב משהו לפני ההעתקה."); return; }
+    try {
+      await navigator.clipboard.writeText(shareDraft);
+      setCopyMessage("הועתק. עכשיו אפשר להדביק בפייסבוק.");
+    } catch {
+      shareTextarea.current?.focus();
+      shareTextarea.current?.select();
+      setCopyMessage("ההעתקה לא הצליחה. הטקסט מסומן כדי שתוכל/י להעתיק ידנית.");
+    }
+  }
+
   return (
     <main className="shell">
       <div className="detail-hero" style={{ "--party-accent": party.color } as React.CSSProperties}>
@@ -99,6 +134,7 @@ export default function PartyDetail({ party }: { party: Party }) {
         <div className="eyebrow" style={{ marginTop: 22 }}>דף רשימה · מידע עד 26.9.2026</div>
         <h1>{party.name}</h1>
         <p>{party.leaders} · {party.summary}</p>
+        <button type="button" className="share-trigger" onClick={openShare}>שתף את ההתלבטות שלי</button>
       </div>
       <section className="panel brief-panel" aria-labelledby="brief-title">
         <div className="panel-header"><h2 id="brief-title">בקצרה</h2><SaveIndicator status={saveState === "error" ? "error" : draft !== null && draft !== note ? "saving" : saveState} retry={retry} /></div>
@@ -257,6 +293,26 @@ export default function PartyDetail({ party }: { party: Party }) {
         </aside>
       </div>
       {blockedBack && <SaveNavigationWarning destination="/map" retry={retry} waitForSave={waitForSave} onClose={() => setBlockedBack(false)} />}
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent className="share-dialog" dir="rtl">
+          <DialogTitle>טיוטה לשיתוף</DialogTitle>
+          <DialogDescription>אפשר לערוך הכול, במיוחד את הסיבה האישית שלך. שום דבר לא מתפרסם אוטומטית.</DialogDescription>
+          <label className="field-label" htmlFor="share-draft">הטקסט שלך</label>
+          <textarea
+            ref={shareTextarea}
+            id="share-draft"
+            className="field share-textarea"
+            value={shareDraft}
+            onChange={(event) => { setShareDraft(event.target.value); setCopyMessage(""); }}
+            rows={10}
+          />
+          {copyMessage && <p className="share-feedback" role="status">{copyMessage}</p>}
+          <div className="share-actions">
+            <button type="button" className="button" onClick={copyShare}>העתק טקסט</button>
+            <DialogClose asChild><button type="button" className="button secondary">סגור</button></DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

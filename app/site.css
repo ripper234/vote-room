@@ -124,6 +124,14 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .detail-hero .eyebrow { color: #b8cbff; }
 .detail-hero h1 { margin: 8px 0; }
 .detail-hero p { margin: 0; color: #d5dff2; }
+.share-trigger { margin-top: 19px; padding: 9px 14px; border: 1px solid #c7d8ff; border-radius: 9px; background: transparent; color: #fff; font-weight: 700; }
+.share-trigger:hover { background: #ffffff1c; }
+.share-trigger:focus-visible { outline: 3px solid #91a8f7; outline-offset: 3px; }
+.share-dialog { width: min(94vw, 600px); max-width: 600px; max-height: 90vh; overflow-y: auto; text-align: right; }
+.share-dialog .field-label { margin: 8px 0 0; }
+.share-textarea { min-height: 230px; line-height: 1.6; resize: vertical; }
+.share-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.share-feedback { margin: 0; color: #2444a4; font-size: .9rem; }
 .video-frame { position: relative; aspect-ratio: 16 / 9; background: #0d1830; border-radius: 12px; overflow: hidden; }
 .video-frame iframe { width: 100%; height: 100%; border: 0; }
 .voice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }

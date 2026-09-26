@@ -17,5 +17,5 @@ export default async function PartyPage({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
   const party = parties.find((item) => item.slug === slug);
   if (!party) notFound();
-  return <PartyDetail party={party} />;
+  return <PartyDetail key={party.slug} party={party} />;
 }
