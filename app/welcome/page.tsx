@@ -37,7 +37,7 @@ export default function Welcome() {
           <span className="eyebrow">ברוכים הבאים לחדר בחירה</span>
           <h1 id="welcome-title">מקום להתלבט, לחזור, ולשנות את דעתך.</h1>
           <p>הבחירה בקלפי לא תמיד נסגרת בשאלון אחד. כאן אפשר להכיר רשימות ואנשים, לסמן מה חשוב לך ולשמור את המחשבות שלך לאורך הדרך.</p>
-          <Link className="button welcome-cta" href="/">למפת הבחירה שלי <span aria-hidden="true">←</span></Link>
+          <Link className="button welcome-cta" href="/map">למפת הבחירה שלי <span aria-hidden="true">←</span></Link>
           <span className="welcome-guest-note">אפשר להתחיל בלי חשבון ובלי להתחייב לבחירה.</span>
         </div>
         <div className="welcome-principle" aria-label="איך מתקבלת התמונה האישית">

@@ -2,6 +2,8 @@
 
 [חדר בחירה](https://voteroom.ripper234.chatgpt.site) is a Hebrew, open-access tool for thinking through an Israeli parliamentary vote. It helps visitors compare party lists, read short summaries and primary sources, watch leaders speak, and record their own priorities and impressions. It does not recommend a party or require an account.
 
+The home page introduces the project and links to other election tools. The personal comparison map is at [למפה](https://voteroom.ripper234.chatgpt.site/map); the earlier `/welcome` URL remains available.
+
 ## How it works
 
 - Visitors choose a starting point about a Netanyahu-led government and can change it or show every list at any time.

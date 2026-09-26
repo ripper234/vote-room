@@ -21,12 +21,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <div className="shell topbar-inner">
             <Link className="brand" href="/"><span className="brand-mark" aria-hidden="true">✓</span>חדר בחירה</Link>
             <nav className="nav" aria-label="ניווט ראשי">
-              <Link href="/">המפה שלי</Link>
-              <Link href="/welcome">איך זה עובד</Link>
+              <Link href="/map">המפה שלי</Link>
+              <Link href="/">ברוכים הבאים</Link>
               <Link href="/roadmap">לאן ממשיכים</Link>
               {user
                 ? <a href={chatGPTSignOutPath("/")} target="_top" title={user.email}>התנתקות</a>
-                : <a href={chatGPTSignInPath("/")} target="_top">כניסה ושמירה</a>}
+                : <a href={chatGPTSignInPath("/map")} target="_top">כניסה ושמירה</a>}
             </nav>
           </div>
         </header>

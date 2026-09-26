@@ -57,7 +57,7 @@ export default function PartyDetail({ party }: { party: Party }) {
   async function goBack(event: React.MouseEvent<HTMLAnchorElement>) {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
-    if (await waitForSave()) window.location.assign("/");
+    if (await waitForSave()) window.location.assign("/map");
   }
   const relevant = party.highlights.filter((item) => state?.priorities.includes(item.topic));
   const unfilled = state?.priorities.filter((tag) => !party.highlights.some((item) => item.topic === tag)) ?? [];
@@ -68,7 +68,7 @@ export default function PartyDetail({ party }: { party: Party }) {
   return (
     <main className="shell">
       <div className="detail-hero" style={{ "--party-accent": party.color } as React.CSSProperties}>
-        <a href="/" onClick={goBack} style={{ color: "#c7d8ff", textUnderlineOffset: 4 }}>← חזרה למפה שלי</a>
+        <a href="/map" onClick={goBack} style={{ color: "#c7d8ff", textUnderlineOffset: 4 }}>← חזרה למפה שלי</a>
         <div className="eyebrow" style={{ marginTop: 22 }}>דף רשימה · מידע עד 25.9.2026</div>
         <h1>{party.name}</h1>
         <p>{party.leaders} · {party.summary}</p>
