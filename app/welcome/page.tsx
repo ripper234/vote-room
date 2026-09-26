@@ -34,10 +34,10 @@ export default function Welcome() {
     <main className="shell welcome-page">
       <section className="welcome-hero" aria-labelledby="welcome-title">
         <div>
-          <span className="welcome-kicker">למה עוד אתר בחירות?</span>
-          <h1 id="welcome-title">כי בחירה לא נגמרת בשאלון.</h1>
-          <p>כאן מכירים את האנשים ואת העמדות, שומרים שאלות והתרשמויות, וחוזרים אליהן כשמשהו משתנה.</p>
-          <Link className="button welcome-cta" href="/map">למפת הבחירה שלי <span aria-hidden="true">←</span></Link>
+          <span className="welcome-kicker">חדר בחירה · דקה להתחיל</span>
+          <h1 id="welcome-title">המפלגות, דרך הדברים שחשובים לך.</h1>
+          <p>לכל רשימה: תקציר מותאם, סרטונים של המובילים וקישורים לעמודים האישיים שלהם כשישנם. מסמנים מה חשוב לך ושומרים את ההתלבטות להמשך.</p>
+          <Link className="button welcome-cta" href="/map">להתחיל במפה <span aria-hidden="true">←</span></Link>
           <span className="welcome-guest-note">אפשר להתחיל בלי חשבון.</span>
         </div>
       </section>
@@ -54,7 +54,7 @@ export default function Welcome() {
         </div>
         <div className="welcome-feature-grid">
           <article className="welcome-feature"><span>01</span><h3>להתחיל מאיפה שנוח לך</h3><p>בוחרים נקודת פתיחה, רואים רשימות, ויכולים לעבור למסלול אחר או להציג את כולן בכל רגע.</p></article>
-          <article className="welcome-feature"><span>02</span><h3>להכיר לפני שמדרגים</h3><p>בכל דף רשימה יש תקציר, מקורות, סרטון של מנהיג או מנהיגים וקישורים אישיים לעקוב אחריהם כשנמצא חשבון מתאים.</p></article>
+          <article className="welcome-feature"><span>02</span><h3>להכיר ולעקוב אחרי האנשים</h3><p>בכל דף רשימה יש תקציר, מקורות וסרטונים של המובילים. כשנמצא חשבון אישי מתאים, יש קישור לעקוב אחריהם ברשתות החברתיות.</p></article>
           <article className="welcome-feature"><span>03</span><h3>לשמור גם את סימני השאלה</h3><p>מסמנים נושאים חשובים, התרשמות, הסתייגויות ומחשבות. אפשר לחזור ולעדכן; השינויים נשמרים לאורך זמן.</p></article>
         </div>
       </section>

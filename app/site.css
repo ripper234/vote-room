@@ -132,12 +132,12 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .about-page .panel-body { padding: 30px; font-size: 1.05rem; line-height: 1.75; }
 .about-page p:last-child { margin-bottom: 0; }
 .welcome-page { padding-top: 38px; padding-bottom: 64px; }
-.welcome-hero { padding: clamp(32px,6vw,76px); border: 1px solid #e1cf50; border-radius: 22px; background: #ffe86b; color: #14264b; }
+.welcome-hero { padding: clamp(28px,5vw,60px); border: 1px solid #e1cf50; border-radius: 22px; background: #ffe86b; color: #14264b; }
 .welcome-hero > div { max-width: 870px; }
 .welcome-kicker { display: inline-block; padding: 7px 13px; border: 1px solid #14264b; border-radius: 999px; font-size: .9rem; font-weight: 800; }
-.welcome-hero h1 { max-width: 13ch; margin: 22px 0 18px; font-size: clamp(2.6rem,6vw,5rem); line-height: 1.06; }
-.welcome-hero p { max-width: 650px; margin-bottom: 15px; color: #263b59; line-height: 1.55; font-size: 1.17rem; }
-.welcome-cta { display: inline-flex; gap: 18px; align-items: center; margin-top: 13px; text-decoration: none; background: #14264b; color: #fff; }
+.welcome-hero h1 { max-width: 19ch; margin: 18px 0 14px; font-size: clamp(2.25rem,5.5vw,4.4rem); line-height: 1.09; }
+.welcome-hero p { max-width: 650px; margin-bottom: 12px; color: #263b59; line-height: 1.5; font-size: 1.12rem; }
+.welcome-cta { display: inline-flex; gap: 18px; align-items: center; margin-top: 9px; text-decoration: none; background: #14264b; color: #fff; }
 .welcome-cta:hover { background: #2444a4; }
 .welcome-guest-note { display: block; margin-top: 13px; color: #344661; font-size: .88rem; }
 .welcome-principle { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 22px; margin-top: 13px; padding: 20px 26px; border-radius: 14px; background: #14264b; color: #fff; }
@@ -195,9 +195,9 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
   .arrow { margin-left: 12px; }
   .detail-hero { margin-top: 18px; padding: 23px 20px; }
   .roadmap-item { grid-template-columns: 1fr; gap: 4px; }
-  .welcome-page { padding-top: 17px; }
-  .welcome-hero { padding: 32px 23px; }
-  .welcome-hero h1 { margin: 20px 0 14px; }
+  .welcome-page { padding-top: 12px; }
+  .welcome-hero { padding: 26px 22px; }
+  .welcome-hero h1 { margin: 17px 0 12px; }
   .welcome-hero p { font-size: 1rem; }
   .welcome-principle { padding: 19px 22px; gap: 7px; }
   .welcome-principle-label { flex-basis: 100%; }
