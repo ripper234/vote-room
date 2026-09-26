@@ -105,36 +105,26 @@ export default function PartyDetail({ party }: { party: Party }) {
           {party.electionStatus && <p className="election-status"><strong>מצב ההתמודדות: </strong>{party.electionStatus.text}{" "}<a href={party.electionStatus.url} target="_blank" rel="noopener noreferrer">מקור ↗</a></p>}
           {state && (
             <>
-            <p className="muted small" style={{ marginTop: -6, lineHeight: 1.5 }}>
-              {state.orientation === "explore"
-                ? "בחרת להתחיל בלי מסנן גושי; הדף הזה עומד להשוואה עם כל הרשימות באתר."
-                : state.orientation === party.bloc
-                  ? "הרשימה נמצאת במסלול שבחרת להתחיל בו. זה עדיין לא אומר שהיא מתאימה לך בשאר הנושאים."
-                  : "הרשימה נמצאת מחוץ למסלול הפתיחה שבחרת. טוב לבדוק אותה בכל זאת אם אחד הנושאים שלה מסקרן אותך."}
-            </p>
+            {state.orientation !== "explore" && state.orientation !== party.bloc && <p className="muted small" style={{ marginTop: -6, lineHeight: 1.5 }}>הרשימה מחוץ למסלול הפתיחה שבחרת, אבל עדיין אפשר לבדוק אותה.</p>}
             <div className="brief-grid">
               <div>
-                <span className="field-label">לפי המצפן שלך</span>
+                <span className="field-label">מה חשוב לי כאן</span>
                 {state.priorities.length ? (
                   <>
-                    <p className="muted small" style={{ lineHeight: 1.5 }}>
-                      סימנת {aligned.length} נושאים כנראים תואמים, {misaligned.length} כנראים לא תואמים ו־{unclear.length} כלא ברורים.
+                    {aligned.length + misaligned.length + unclear.length > 0 && <p className="muted small" style={{ lineHeight: 1.5 }}>
+                      סימנת {aligned.length} תואמים, {misaligned.length} לא תואמים ו־{unclear.length} לא ברורים.
                       {misaligned.length > 0 && ` הפערים שסימנת: ${misaligned.join(" · ")}.`}
-                    </p>
+                    </p>}
                     {relevant.length ? <ul className="source-list">
                       {relevant.slice(0, 4).map((item) => <li key={item.topic}><strong>{item.topic}:</strong> {item.text}{" "}
                         <a href={item.url} target="_blank" rel="noopener noreferrer">מקור ↗</a></li>)}
-                    </ul> : <p className="muted small">עדיין אין בדף הזה סיכום מקור לנושאים שבחרת. כדאי לפתוח את המצע ולסמן את התרשמותך.</p>}
+                    </ul> : <p className="muted small">לא סיכמנו כאן עדיין עמדה בנושאים שבחרת. אפשר לפתוח את המצע ולבדוק.</p>}
                   </>
-                ) : <p className="muted small">בחר נושאים במפה שלך כדי לקבל כאן מקורות רלוונטיים לך. אפשר גם להמשיך ישר לווידאו.</p>}
+                ) : <p className="muted small">בחר נושאים במפה כדי לראות כאן מידע שרלוונטי לך.</p>}
               </div>
               <div>
-                <span className="field-label">מה עדיין דורש בדיקה</span>
-                <p className="muted small" style={{ lineHeight: 1.55 }}>
-                  {unfilled.length
-                    ? `טרם סיכמנו כאן מקור מבוסס עבור: ${unfilled.slice(0, 4).join(" · ")}${unfilled.length > 4 ? " ועוד" : ""}. זה לא אומר שאין למפלגה עמדה.`
-                    : "בדוק מה מהדברים יוכל להתממש בהסכם קואליציוני, ומה חשוב לך מעבר למצע."}
-                </p>
+                {unfilled.length > 0 && <><span className="field-label">מה חסר</span>
+                  <p className="muted small" style={{ lineHeight: 1.55 }}>אין כאן עדיין מקור מסוכם עבור: {unfilled.slice(0, 4).join(" · ")}{unfilled.length > 4 ? " ועוד" : ""}.</p></>}
                 {state.partyNotes[party.slug] && <p className="your-note"><strong>המחשבה ששמרת:</strong> {state.partyNotes[party.slug]}</p>}
               </div>
             </div>
@@ -160,7 +150,7 @@ export default function PartyDetail({ party }: { party: Party }) {
           <section className="panel" aria-labelledby="voices-title">
             <div className="panel-header"><h2 id="voices-title">מי תומך, מי מסתייג</h2></div>
             <div className="panel-body">
-              <p className="muted small" style={{ marginTop: 0, lineHeight: 1.55 }}>הצהרות אישיות פומביות עם תאריך ומקור. זו דגימה חלקית, לא מדגם מייצג ולא המלצת האתר. ביקורת על מדיניות אינה מוצגת כאן כהתנגדות להצבעה.</p>
+              <p className="muted small" style={{ marginTop: 0, lineHeight: 1.55 }}>הצהרות פומביות עם תאריך ומקור. הכיסוי חלקי.</p>
               <div className="voice-grid">
                 <VoiceColumn title="הביעו תמיכה או כוונת הצבעה" items={supportingVoices} empty="עדיין לא אומתה כאן הצהרת תמיכה אישית." />
                 <VoiceColumn title="הצהירו שלא יצביעו לרשימה" items={opposingVoices} empty="עדיין לא אומתה כאן הצהרה אישית נגד הצבעה לרשימה." />
@@ -185,7 +175,7 @@ export default function PartyDetail({ party }: { party: Party }) {
             <section className="panel">
               <div className="panel-header"><h2>הנושאים שחשובים לי</h2></div>
               <div className="panel-body">
-                <p className="muted small">סמן את ההתרשמות שלך אחרי שעיינת במקורות. ״עוד לא ברור״ הוא תשובה טובה.</p>
+                <p className="muted small">סמן מה נראה לך אחרי שבדקת. אפשר גם לבחור ״עוד לא ברור״.</p>
                 {state.priorities.map((tag, index) => (
                   <div className="issue-row" key={tag}>
                     <span className="field-label">{tag}</span>
@@ -262,9 +252,6 @@ export default function PartyDetail({ party }: { party: Party }) {
               </div>
             )}
           </section>
-          <div className="notice">
-            זו נקודת פתיחה לבירור, לא קביעה שהרשימה מתאימה לך. קישורים למצע ולדברי המנהיגים הם חומר גלם; גם עמדות על שותפים קואליציוניים עשויות להשתנות.
-          </div>
         </aside>
       </div>
     </main>

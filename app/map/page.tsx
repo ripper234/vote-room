@@ -109,7 +109,7 @@ export default function Home() {
         <div>
           <span className="eyebrow">מפת בחירה אישית · פתוחה לכולם</span>
           <h1>{state?.orientation ? "מה חשוב לי בבחירות האלה?" : "מאיפה מתחילים?"}</h1>
-          <p>{state?.orientation ? "בחר נושאים, הקשב לאנשים, ובדוק מה מתאים לך. אפשר לשנות כיוון בכל רגע." : "שאלה אחת מסדרת את נקודת הפתיחה. היא לא קובעת מה תצביעו."}</p>
+          {!state?.orientation && <p>בחר נקודת פתיחה. תמיד אפשר לשנות.</p>}
         </div>
         <span className="date-stamp">מידע על הרשימות: 26.9.2026</span>
       </div>
@@ -126,15 +126,15 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <p className="muted small" style={{ padding: "0 24px 22px", margin: 0 }}>אפשר להמשיך בלי חשבון. הבחירות נשמרות במכשיר; <a href="/signin-with-chatgpt?return_to=%2Fmap" target="_top">כניסה עם ChatGPT</a> תאפשר להמשיך גם במכשיר אחר.</p>
+          <p className="muted small" style={{ padding: "0 24px 22px", margin: 0 }}>אפשר להמשיך כאורח. רוצה להמשיך במכשיר אחר? <a href="/account">יצירת חשבון</a>.</p>
         </section>
       ) : <>
       <div className="path-bar">
-        <span><strong>{routeLabel}</strong><small>המסלול הוא מסנן ראשוני, לא שיוך סופי לכל מפלגה.</small></span>
+        <strong>{routeLabel}</strong>
         <button type="button" className="button secondary" onClick={() => { setShowAll(false); update((previous) => ({ ...previous, orientation: "" }), "orientation"); }}>שנה נקודת פתיחה</button>
       </div>
       <div className="account-message">
-        {account ? `מחובר לחשבון ${account.email}. המפה נשמרת גם למכשיר הבא.` : <>מומלץ <a href="/signin-with-chatgpt?return_to=%2Fmap" target="_top">להיכנס לחשבון</a> כדי להמשיך ממכשיר אחר. אפשר להמשיך בלי כניסה.</>}
+        {account ? `מחובר/ת: ${account.email}` : <>רוצה לחזור גם ממכשיר אחר? <a href="/account">יצירת חשבון</a>.</>}
       </div>
       <div className="workspace-grid">
         <div className="section-stack">
@@ -147,7 +147,7 @@ export default function Home() {
               <span>{selected.length ? `נושאים שחשובים לי: ${selected.join(" · ")}` : "אפשר להתחיל להכיר את הרשימות, או למלא את המצפן כדי להתמקד בנושאים שלך."}</span>
               <a href="#my-compass" className="button secondary">מלא את המצפן ↓</a>
               {state.generalNotes && <p className="muted small"><strong>המחשבה שלי:</strong> {state.generalNotes}</p>}
-              <small>הציון מחושב רק מהדירוגים שלך בדפי הרשימות: תואם 100, לא ברור 50, לא תואם 0. אין ציון לפני דירוג.</small>
+              <details className="score-explainer"><summary>איך מחושב הציון?</summary><small>לפי הסימונים שלך בדפי הרשימות: תואם 100, לא ברור 50, לא תואם 0. לפני דירוג אין ציון.</small></details>
             </div>
             <div className="party-list">
               {sortedVisible.map((party, index) => (
@@ -212,7 +212,7 @@ export default function Home() {
             </button>
           )}
           <div className="notice" style={{ background: "#fff", borderStyle: "dashed" }}>
-            מוצגות כאן רשימות מרכזיות מתוך הרשימות שהוגשו, לא כל הרשימות שהוגשו. האישור הסופי והעמדות עשויים להשתנות עד הבחירות.{" "}
+            זו לא רשימת כל המתמודדים. ההרכב הסופי עשוי להשתנות.{" "}
             <a href="https://www.knesset.tv/main-articles/61384/94592/" target="_blank" rel="noopener noreferrer">לכל הרשימות שהוגשו ↗</a>
           </div>
         </div>
@@ -223,7 +223,7 @@ export default function Home() {
             <SaveIndicator status={saveState === "error" ? "error" : generalDraft !== null && generalDraft !== state.generalNotes ? "saving" : saveState} retry={retry} />
           </div>
             <div className="panel-body">
-              <p className="muted small">מה הנושאים שתרצה להחזיק מול העיניים? הבחירות שלך נשמרות, כולל השינויים לאורך הדרך.</p>
+              <p className="muted small">מה חשוב לך? הסימונים נשמרים אוטומטית.</p>
               <div className="tags" aria-label="נושאים חשובים">
                 {priorityOptions.map((label) => (
                   <label key={label} className="tag" data-active={selected.includes(label)}>

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { chatGPTSignInPath, chatGPTSignOutPath, getChatGPTUser } from "./chatgpt-auth";
+import { chatGPTSignOutPath, getChatGPTUser } from "./chatgpt-auth";
 import "./globals.css";
 import "./site.css";
 
@@ -19,14 +18,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body>
         <header className="topbar">
           <div className="shell topbar-inner">
-            <Link className="brand" href="/"><span className="brand-mark" aria-hidden="true">✓</span>חדר בחירה</Link>
+            <a className="brand" href="/"><span className="brand-mark" aria-hidden="true">✓</span>חדר בחירה</a>
             <nav className="nav" aria-label="ניווט ראשי">
-              <Link href="/map">המפה שלי</Link>
-              <Link href="/">ברוכים הבאים</Link>
-              <Link href="/roadmap">לאן ממשיכים</Link>
+              <a href="/map">המפה שלי</a>
+              <a href="/">ברוכים הבאים</a>
+              <a href="/roadmap">לאן ממשיכים</a>
               {user
                 ? <a href={chatGPTSignOutPath("/")} target="_top" title={user.email}>התנתקות</a>
-                : <a href={chatGPTSignInPath("/map")} target="_top">כניסה ושמירה</a>}
+                : <a href="/account">יצירת חשבון</a>}
             </nav>
           </div>
         </header>
@@ -34,7 +33,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <footer className="site-footer">
           <div className="shell footer-inner">
             <span>לחשוב יחד, לבחור בעצמך.</span>
-            <Link href="/about">אודות והרעיון מאחורי האתר</Link>
+            <a href="/about">אודות והרעיון מאחורי האתר</a>
             <a href="https://github.com/ripper234/vote-room" target="_blank" rel="noopener noreferrer">הקוד הפתוח ב־GitHub ↗</a>
           </div>
         </footer>
