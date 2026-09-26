@@ -35,8 +35,8 @@ export default function Welcome() {
       <section className="welcome-hero" aria-labelledby="welcome-title">
         <div>
           <span className="welcome-kicker">חדר בחירה · דקה להתחיל</span>
-          <h1 id="welcome-title">המפלגות, דרך הדברים שחשובים לך.</h1>
-          <p>לכל רשימה: תקציר מותאם, קטעי וידאו קצרים של המובילים וקישורים לעמודים האישיים שלהם כשישנם. מסמנים מה חשוב לך ושומרים את ההתלבטות להמשך.</p>
+          <h1 id="welcome-title">למה עוד אתר בחירות</h1>
+          <p>כדי להכיר את האנשים שמאחורי הפתק: תקציר לפי מה שחשוב לך, סרטון קצר של כל מוביל וקישור לעמוד האישי שלו כשישנו. גם ההתלבטויות שלך נשמרות להמשך.</p>
           <Link className="button welcome-cta" href="/map">להתחיל במפה <span aria-hidden="true">←</span></Link>
           <span className="welcome-guest-note">אפשר להתחיל בלי חשבון.</span>
         </div>
