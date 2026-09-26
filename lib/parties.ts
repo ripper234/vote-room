@@ -347,8 +347,9 @@ export const parties: Party[] = [
     summary: "רשימה בראשות בני גנץ",
     tldr: "גנץ מדבר על ממשלת הסכמות ואינו פוסל מראש שותפות עם נתניהו. לכן הרשימה לא מסווגת כאן אוטומטית לאחד משני המחנות.",
     context: "העמדה הקואליציונית היא שאלה מכרעת בדף הזה: בדוק מה ייחשב להסכמה מספקת ומה יישאר קו אדום.",
-    manifestoSummary: "מסמך עקרונות רשמי מ־2025 מציג הצעות בנושאי דמוקרטיה, משילות, כלכלה ודת ומדינה. זהו מקור מתוארך, ויש לבדוק אם הרשימה אימצה מסמך מעודכן לבחירות 2026.",
+    manifestoSummary: "מסמך העקרונות מ־2025 מציג הצעות בדמוקרטיה, משילות, כלכלה ודת ומדינה. בספטמבר 2026 פורסמה גם תכנית ממשלית־חוקתית בהסכמה. כדאי לקרוא את שני המסמכים ולבדוק מה מתחייבת הרשימה לקדם.",
     program: { label: "עקרונות כחול לבן, PDF מ־2025", url: "https://kachollavan.org.il/wp-content/uploads/2025/07/20527_3_A5_Hoveret_Ekronot_ONE_PAGE_A.pdf" },
+    extraSources: [{ label: "תכנית ממשלית־חוקתית, ספטמבר 2026", url: "https://kachollavan.org.il/7659/" }],
     highlights: [
       { topic: "משילות ושירות ציבורי", text: "מסמך העקרונות מ־2025 מציע חיזוק אכיפה וביטחון פנים וביזור סמכויות לשלטון המקומי.", url: "https://kachollavan.org.il/wp-content/uploads/2025/07/20527_3_A5_Hoveret_Ekronot_ONE_PAGE_A.pdf" },
       { topic: "דמוקרטיה וחוקה", text: "מסמך העקרונות מ־2025 מציע לשמור על עצמאות מערכת המשפט, לקדם חוק יסוד: החקיקה ולעגן שוויון בזכויות הפרט.", url: "https://kachollavan.org.il/wp-content/uploads/2025/07/20527_3_A5_Hoveret_Ekronot_ONE_PAGE_A.pdf" },
@@ -435,7 +436,7 @@ export const emptyDecision: DecisionState = {
 export const orientationChoices = [
   { value: "change", title: "מעדיף/ה ממשלה בלי נתניהו", subtitle: "מתחילים ברשימות גוש השינוי" },
   { value: "continue", title: "מעדיף/ה ממשלה בראשות נתניהו", subtitle: "מתחילים ברשימות התומכות בהמשך כהונתו" },
-  { value: "explore", title: "לא יודע/ת, או שזה לא הקריטריון שלי", subtitle: "רואים אפשרויות מכל המסלולים" },
+  { value: "explore", title: "לראות את כל הרשימות", subtitle: "לא יודע/ת, או שנתניהו אינו הקריטריון שלי" },
 ];
 
 export const coalitionChoices = [

@@ -90,7 +90,7 @@ try {
     try {
       const { response, result } = await request("/");
       if (response.ok) {
-        assert.match(result, /סרטונים קצרים של המועמדים/);
+        assert.match(result, /סרטון קצר של המועמד/);
         ready = true;
         break;
       }
@@ -115,6 +115,7 @@ try {
   const party = await request("/party/yahad");
   assert.equal(party.response.status, 200);
   assert.match(party.result, /youtube-nocookie\.com/);
+  assert.match(party.result, /הטיעון החזק נגד/);
 
   const signIn = await request("/signin-with-chatgpt?return_to=%2Fmap");
   assert.equal(signIn.response.status, 302);

@@ -13,6 +13,7 @@ const statusLabels: Record<string, string> = {
   concerned: "יש לי הסתייגויות",
   out: "לא בכיוון כרגע",
 };
+const starterPriorities = ["משילות ושירות ציבורי", "כלכלה ויוקר המחיה", "דמוקרטיה וחוקה"];
 
 export default function Home() {
   const { state, saveState, update, retry, waitForSave, recoveryKey, previousRecoveryKey, restoreRecoveryKey, restorePreviousKey, account } = useDecision();
@@ -25,6 +26,8 @@ export default function Home() {
   const [copyStatus, setCopyStatus] = useState("");
   const [blockedPartyHref, setBlockedPartyHref] = useState("");
   const selected = state?.priorities ?? [];
+  const firstPriorities = priorityOptions.filter((label) => starterPriorities.includes(label));
+  const morePriorities = priorityOptions.filter((label) => !starterPriorities.includes(label));
   const pathParties = showAll || state?.orientation === "explore"
     ? parties
     : state?.orientation === "continue"
@@ -36,10 +39,10 @@ export default function Home() {
   const gradeFor = (slug: string) => {
     const ratings = state?.issueAssessments?.[slug] ?? {};
     const marked = selected.filter((tag) => ratings[tag]);
-    if (!marked.length) return "הציון שלי: טרם דירגתי";
+    if (marked.length < 2) return "";
     const score = Math.round(marked.reduce((sum, tag) =>
       sum + (ratings[tag] === "aligned" ? 100 : ratings[tag] === "unclear" ? 50 : 0), 0) / marked.length);
-    return `הציון שלי: ${score}/100 · על סמך ${marked.length} נושאים שסימנתי`;
+    return `ההערכה שלי: ${score}/100 · דירגתי ${marked.length} מתוך ${selected.length} נושאים`;
   };
   const sortedVisible = [...visible].sort((a, b) => rank(a.slug) - rank(b.slug));
   const hasVotes = sortedVisible.some((party) => rank(party.slug) !== 1);
@@ -85,6 +88,14 @@ export default function Home() {
     }), "priority");
   }
 
+  function priorityTag(label: string) {
+    return <label key={label} className="tag" data-active={selected.includes(label)}>
+      <Checkbox checked={selected.includes(label)} onCheckedChange={(value) => togglePriority(label, value === true)}
+        aria-label={label} className="ml-1 border-current data-[state=checked]:bg-white data-[state=checked]:text-[#2444d8]" />
+      {label}
+    </label>;
+  }
+
   function addTag(event: React.FormEvent) {
     event.preventDefault();
     const tag = custom.trim().slice(0, 80);
@@ -126,7 +137,7 @@ export default function Home() {
       <div className="intro">
         <div>
           <span className="eyebrow">מפת בחירה אישית · פתוחה לכולם</span>
-          <h1>{state?.orientation ? "מה חשוב לי בבחירות האלה?" : "מאיפה מתחילים?"}</h1>
+          <h1>{state?.orientation ? "הרשימות לבחירה" : "מאיפה מתחילים?"}</h1>
           {!state?.orientation && <p>בחר נקודת פתיחה. תמיד אפשר לשנות.</p>}
         </div>
         <span className="date-stamp">מידע על הרשימות: 26.9.2026</span>
@@ -159,21 +170,18 @@ export default function Home() {
         <strong>{routeLabel}</strong>
         <button type="button" className="button secondary" onClick={() => { setShowAll(false); update((previous) => ({ ...previous, orientation: "" }), "orientation"); }}>שנה נקודת פתיחה</button>
       </div>
-      <div className="account-message">
-        {account ? `מחובר/ת: ${account.email}` : <>רוצה לחזור גם ממכשיר אחר? <a href="/account">יצירת חשבון</a>.</>}
-      </div>
       <div className="workspace-grid">
         <div className="section-stack">
           <section className="panel" id="results" aria-labelledby="parties-title">
             <div className="panel-header">
-              <h2 id="parties-title">התמונה שלי · רשימות לבדיקה</h2>
+              <h2 id="parties-title">רשימות לבדיקה</h2>
               <span className="result-header-meta"><span className="muted small">{visible.length} רשימות</span><SaveIndicator status={saveState === "error" ? "error" : generalDraft !== null && generalDraft !== state.generalNotes ? "saving" : saveState} retry={retry} /></span>
             </div>
             <div className="result-intro">
-              <span>{selected.length ? `נושאים שחשובים לי: ${selected.join(" · ")}` : "אפשר להתחיל להכיר את הרשימות, או למלא את המצפן כדי להתמקד בנושאים שלך."}</span>
-              <a href="#my-compass" className="button secondary">מלא את המצפן ↓</a>
+              <span>{selected.length ? `חשוב לי: ${selected.join(" · ")}` : "אפשר לפתוח רשימה מיד. אפשר גם לבחור נושאים חשובים לך."}</span>
+              <a href="#my-compass" className="button secondary">בחר נושאים ↓</a>
               {state.generalNotes && <p className="muted small"><strong>המחשבה שלי:</strong> {state.generalNotes}</p>}
-              <details className="score-explainer"><summary>איך מחושב הציון?</summary><small>לפי הסימונים שלך בדפי הרשימות: תואם 100, לא ברור 50, לא תואם 0. לפני דירוג אין ציון.</small></details>
+              <details className="score-explainer"><summary>איך מחושב הציון האישי?</summary><small>הציון מבוסס רק על הדירוג שלך בדפי הרשימות, אחרי שסימנת לפחות שני נושאים: תואם 100, לא ברור 50, לא תואם 0. הוא אינו המלצת הצבעה.</small></details>
             </div>
             <div className="party-list">
               {sortedVisible.map((party, index) => (
@@ -193,13 +201,12 @@ export default function Home() {
                   <a className="party-card-link" href={`/party/${party.slug}`} onClick={openParty}>
                     <div className="party-card-main">
                       <h3>{party.name}</h3>
-                      <p>{party.leaders} · {party.summary}</p>
+                      <p>{party.leaders}</p>
                       {party.electionStatus && <span className="party-status-note">ההתמודדות תלויה בהכרעת העליון · פירוט בדף הרשימה</span>}
                       <div className="personal-result">
-                        <strong>{gradeFor(party.slug)}</strong>
-                        <span>{party.highlights.find((item) => selected.includes(item.topic))
-                          ? party.highlights.find((item) => selected.includes(item.topic))!.text
-                          : selected.length ? "אין כאן עדיין מקור מסוכם לנושאים שבחרת; בדוק את דף הרשימה." : party.tldr}</span>
+                        <span>{party.tldr}</span>
+                        {party.highlights.find((item) => selected.includes(item.topic)) && <span className="matched-highlight">לפי הנושאים שלך: {party.highlights.find((item) => selected.includes(item.topic))!.text}</span>}
+                        {gradeFor(party.slug) && <strong>{gradeFor(party.slug)}</strong>}
                       </div>
                       {(state.partyStatus[party.slug] || state.priorities.length > 0 || (hasVotes && (showAll || state.orientation === "explore"))) && <div className="meta">
                         {[
@@ -209,7 +216,7 @@ export default function Home() {
                         ].filter(Boolean).join(" · ")}
                       </div>}
                     </div>
-                    <span className="arrow" aria-hidden="true">←</span>
+                    <span className="card-action">לדף הרשימה <span aria-hidden="true">←</span></span>
                   </a>
                   <div className="party-votes" role="group" aria-label={`סימון ${party.name}`}>
                     <button type="button" className="vote-button" aria-label={`${party.name}: מתאים לי`} aria-pressed={state.partyStatus[party.slug] === "positive"} onClick={() => togglePartyVote(party.slug, "positive")}>
@@ -249,19 +256,9 @@ export default function Home() {
             <SaveIndicator status={saveState === "error" ? "error" : generalDraft !== null && generalDraft !== state.generalNotes ? "saving" : saveState} retry={retry} />
           </div>
             <div className="panel-body">
-              <p className="muted small">מה חשוב לך? הסימונים נשמרים אוטומטית.</p>
+              <p className="muted small">בחר רק אם זה עוזר לך. הבחירות שלך נשמרות אוטומטית.</p>
               <div className="tags" aria-label="נושאים חשובים">
-                {priorityOptions.map((label) => (
-                  <label key={label} className="tag" data-active={selected.includes(label)}>
-                    <Checkbox
-                      checked={selected.includes(label)}
-                      onCheckedChange={(value) => togglePriority(label, value === true)}
-                      aria-label={label}
-                      className="ml-1 border-current data-[state=checked]:bg-white data-[state=checked]:text-[#2444d8]"
-                    />
-                    {label}
-                  </label>
-                ))}
+                {firstPriorities.map(priorityTag)}
                 {state.customTags.map((label) => (
                   <span key={label} className="custom-tag">
                     <label className="tag" data-active={selected.includes(label)}>
@@ -272,8 +269,14 @@ export default function Home() {
                   </span>
                 ))}
               </div>
+              <a className="button result-action" href="#results">חזרה לרשימות ↑</a>
+              <details className="compass-more">
+                <summary>עוד נושאים ושאלות (לא חובה){morePriorities.filter((label) => selected.includes(label)).length ? ` · ${morePriorities.filter((label) => selected.includes(label)).length} מסומנים` : ""}</summary>
+                <p className="muted small">אפשר לבחור נושאים נוספים או לשמור מחשבות. תשובות על שותפות קואליציונית נשמרות אצלך, ולא משנות כרגע את הציון.</p>
+                <div className="tags" aria-label="נושאים נוספים">{morePriorities.map(priorityTag)}</div>
               <form className="input-row" style={{ marginTop: 14 }} onSubmit={addTag}>
-                <input className="field" value={custom} onChange={(event) => { setCustom(event.target.value); setTagError(""); }} maxLength={80} placeholder="נושא נוסף שחשוב לי" aria-label="נושא נוסף" />
+                <label className="sr-only" htmlFor="custom-topic">נושא נוסף שחשוב לי</label>
+                <input id="custom-topic" className="field" value={custom} onChange={(event) => { setCustom(event.target.value); setTagError(""); }} maxLength={80} placeholder="נושא נוסף שחשוב לי" />
                 <button className="button secondary" type="submit">הוסף</button>
               </form>
               {tagError && <p className="form-feedback" role="alert">{tagError}</p>}
@@ -319,7 +322,6 @@ export default function Home() {
                 maxLength={10000}
               />
               <p className="muted small" style={{ margin: "8px 0 0" }}>המחשבה נשמרת אוטומטית.</p>
-              <a className="button result-action" href="#results">הצג את התוצאות שלי ↑</a>
               <hr className="divider" />
               {!account && <details className="recovery-details">
                 <summary>גיבוי והעברה למכשיר אחר</summary>
@@ -337,6 +339,7 @@ export default function Home() {
                 {keyError && <p role="alert" style={{ color: "#b42335", marginTop: 8 }}>המפתח צריך להכיל 64 תווים. בדוק שהועתק במלואו.</p>}
                 {previousRecoveryKey && <button className="button secondary" style={{ marginTop: 12 }} type="button" onClick={restorePreviousKey}>חזור למפה הקודמת במכשיר הזה</button>}
               </details>}
+              </details>
             </div>
         </section>
 

@@ -136,7 +136,6 @@ export default function PartyDetail({ party }: { party: Party }) {
         <div className="eyebrow" style={{ marginTop: 22 }}>דף רשימה · מידע עד 26.9.2026</div>
         <h1>{party.name}</h1>
         <p>{party.leaders} · {party.summary}</p>
-        <button type="button" className="share-trigger" onClick={openShare}>שתף את ההתלבטות שלי</button>
       </div>
       <section className="panel brief-panel" aria-labelledby="brief-title">
         <div className="panel-header"><h2 id="brief-title">בקצרה</h2><SaveIndicator status={saveState === "error" ? "error" : draft !== null && draft !== note ? "saving" : saveState} retry={retry} /></div>
@@ -173,7 +172,7 @@ export default function PartyDetail({ party }: { party: Party }) {
         </div>
       </section>
       <div className="detail-grid">
-        <div className="section-stack">
+        <div className="section-stack detail-primary">
           <section className="panel">
             <div className="panel-header"><h2>להקשיב לאנשים · 2–5 דקות</h2></div>
             <div className="panel-body">
@@ -185,33 +184,74 @@ export default function PartyDetail({ party }: { party: Party }) {
                   {featuredVideos.map((video) => <TabsContent key={video.id} value={video.id}><Video video={video} /></TabsContent>)}
                 </Tabs>
               ) : featuredVideos.length ? <Video video={featuredVideos[0]} /> : <p className="muted small">עדיין לא נבחר כאן קטע קצר שאפשר לאמת. סרטונים ארוכים יותר מופיעים בהמשך הדף.</p>}
+              <div className="video-follow"><span className="field-label">לעקוב אחרי המועמדים</span>
+              {party.people.length ? <div className="link-list">{party.people.map((person) => (
+                <a className="outlink" href={person.x} key={person.name} target="_blank" rel="noopener noreferrer">{person.name} ב־X ↗</a>
+              ))}</div> : <p className="muted small">לא אומת חשבון אישי של המנהיג בדף הזה. הראיון למעלה הוא דרך להכיר את קולו.</p>}
+              </div>
             </div>
           </section>
           {fairReading && <section className="panel fair-reading" aria-labelledby="fair-reading-title">
             <div className="panel-header">
-              <h2 id="fair-reading-title">להבין לפני שמחליטים</h2>
+              <h2 id="fair-reading-title">הטיעון בעד · הטיעון נגד</h2>
               <a className="small" href="/about#fair-reading-method">איך ניסחנו את זה?</a>
             </div>
             <div className="panel-body">
-              <p className="muted small fair-reading-note">ניסיון הוגן לנסח את העמדה, לא ציטוט של הרשימה או המלצת הצבעה.</p>
+              <p className="muted small fair-reading-note">שני ניסוחים שלנו, על בסיס המקורות. לא ציטוטים או המלצת הצבעה.</p>
               <div className="fair-reading-grid">
                 <div>
                   <span className="field-label">הטיעון החזק בעד</span>
                   <p>{fairReading.argument}</p>
-                  <div className="fair-reading-sources">{fairReading.sources.map((source) =>
-                    <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.label} ↗</a>
-                  )}</div>
                 </div>
                 <div>
-                  <span className="field-label">מה מתנגש כאן</span>
-                  <p>{fairReading.needs}</p>
-                  <span className="field-label">השאלה הקשה</span>
-                  <p>{fairReading.question}</p>
+                  <span className="field-label">הטיעון החזק נגד</span>
+                  <p>{fairReading.counterargument}</p>
                 </div>
               </div>
-              <p className="fair-reading-prompt">לשיחה: מה שמעתי? מה זה מעורר בי? מה חשוב לי? מה הייתי רוצה לשאול?</p>
+              <div className="fair-reading-sources">{fairReading.sources.map((source) =>
+                <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.label} ↗</a>
+              )}</div>
+              <details className="fair-reading-more">
+                <summary>עוד שאלה לחשיבה</summary>
+                <p><strong>מה מתנגש כאן?</strong> {fairReading.needs}</p>
+                <p><strong>מה לשאול?</strong> {fairReading.question}</p>
+                <p>לשיחה: מה שמעתי, מה חשוב לי, ומה ארצה לברר?</p>
+              </details>
             </div>
           </section>}
+        </div>
+        <aside className="section-stack detail-aside">
+          <section className="panel">
+            <div className="panel-header"><h2>ההתרשמות שלי</h2><SaveIndicator status={saveState === "error" ? "error" : draft !== null && draft !== note ? "saving" : saveState} retry={retry} /></div>
+            {!state ? <div className="panel-body">{saveState === "error" ? <p>המפה האישית לא נטענה. אפשר לקרוא את דף הרשימה ולנסות שוב, או <a href="/account">ליצור חשבון</a>. <button type="button" className="button secondary" onClick={retry}>נסה שוב</button></p> : <div className="loading">טוען את ההתרשמות שלך…</div>}</div> : (
+              <div className="panel-body">
+                <span className="field-label">איפה היא עומדת אצלי כרגע?</span>
+                <RadioGroup
+                  value={state.partyStatus[party.slug] ?? ""}
+                  onValueChange={(value) => update((previous) => ({ ...previous, partyStatus: { ...previous.partyStatus, [party.slug]: value } }), "party_status")}
+                  className="choice-list"
+                  aria-label="ההתרשמות שלך מהרשימה"
+                >
+                  {statuses.map((item) => <label className="choice-row" key={item.value} htmlFor={`status-${item.value}`}><RadioGroupItem id={`status-${item.value}`} value={item.value} aria-label={item.label} /><span>{item.label}</span></label>)}
+                </RadioGroup>
+                <hr className="divider" />
+                <label className="field-label" htmlFor="party-note">מה הרגשתי? מה עוד לא ברור?</label>
+                <textarea
+                  id="party-note"
+                  className="field"
+                  placeholder="דברים שקלטת מהנאום, קו אדום, שאלה פתוחה…"
+                  value={draft ?? note}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onBlur={() => draft !== null && saveNote(draft)}
+                  maxLength={5000}
+                />
+                <p className="muted small" style={{ margin: "8px 0 0" }}>ההתרשמות נשמרת אוטומטית.</p>
+                <button type="button" className="button secondary share-from-detail" onClick={openShare}>שתף את ההתלבטות שלי</button>
+              </div>
+            )}
+          </section>
+        </aside>
+        <div className="section-stack detail-more">
           <section className="panel" aria-labelledby="voices-title">
             <div className="panel-header"><h2 id="voices-title">מי תומך, מי מסתייג</h2></div>
             <div className="panel-body">
@@ -268,14 +308,6 @@ export default function PartyDetail({ party }: { party: Party }) {
               </div>
             </section>
           )}
-          <section className="panel">
-            <div className="panel-header"><h2>לעקוב אחרי האנשים</h2></div>
-            <div className="panel-body">
-              {party.people.length ? <div className="link-list">{party.people.map((person) => (
-                <a className="outlink" href={person.x} key={person.name} target="_blank" rel="noopener noreferrer">{person.name} ב־X ↗</a>
-              ))}</div> : <p className="muted small">לא אומת חשבון אישי של המנהיג בדף הזה. הראיון למעלה הוא דרך להכיר את קולו.</p>}
-            </div>
-          </section>
           <section className="panel" id="more-videos">
             <div className="panel-header"><h2>עוד לצפייה</h2></div>
             <div className="panel-body">
@@ -288,36 +320,6 @@ export default function PartyDetail({ party }: { party: Party }) {
             </div>
           </section>
         </div>
-        <aside className="section-stack">
-          <section className="panel">
-            <div className="panel-header"><h2>ההתרשמות שלי</h2><SaveIndicator status={saveState === "error" ? "error" : draft !== null && draft !== note ? "saving" : saveState} retry={retry} /></div>
-            {!state ? <div className="panel-body">{saveState === "error" ? <p>המפה האישית לא נטענה. אפשר לקרוא את דף הרשימה ולנסות שוב, או <a href="/account">ליצור חשבון</a>. <button type="button" className="button secondary" onClick={retry}>נסה שוב</button></p> : <div className="loading">טוען את ההתרשמות שלך…</div>}</div> : (
-              <div className="panel-body">
-                <span className="field-label">איפה היא עומדת אצלי כרגע?</span>
-                <RadioGroup
-                  value={state.partyStatus[party.slug] ?? ""}
-                  onValueChange={(value) => update((previous) => ({ ...previous, partyStatus: { ...previous.partyStatus, [party.slug]: value } }), "party_status")}
-                  className="choice-list"
-                  aria-label="ההתרשמות שלך מהרשימה"
-                >
-                  {statuses.map((item) => <label className="choice-row" key={item.value} htmlFor={`status-${item.value}`}><RadioGroupItem id={`status-${item.value}`} value={item.value} aria-label={item.label} /><span>{item.label}</span></label>)}
-                </RadioGroup>
-                <hr className="divider" />
-                <label className="field-label" htmlFor="party-note">מה הרגשתי? מה עוד לא ברור?</label>
-                <textarea
-                  id="party-note"
-                  className="field"
-                  placeholder="דברים שקלטת מהנאום, קו אדום, שאלה פתוחה…"
-                  value={draft ?? note}
-                  onChange={(event) => setDraft(event.target.value)}
-                  onBlur={() => draft !== null && saveNote(draft)}
-                  maxLength={5000}
-                />
-                <p className="muted small" style={{ margin: "8px 0 0" }}>ההתרשמות נשמרת אוטומטית.</p>
-              </div>
-            )}
-          </section>
-        </aside>
       </div>
       {blockedBack && <SaveNavigationWarning destination="/map" retry={retry} waitForSave={waitForSave} onClose={() => setBlockedBack(false)} />}
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>

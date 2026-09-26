@@ -34,11 +34,12 @@ export default function Welcome() {
       <section className="welcome-hero" aria-labelledby="welcome-title">
         <div>
           <h1 id="welcome-title">למה עוד אתר בחירות?</h1>
-          <p>תקציר לפי מה שחשוב לך, סרטונים קצרים וקישורים לעמודים האישיים של המועמדים. בכל דף גם הטיעון החזק והשאלה הקשה. אפשר לשמור את ההתלבטות.</p>
+          <p>סרטון קצר של המועמד, תקציר המצע, והטיעון החזק בעד ונגד כל רשימה. אפשר לסמן מה חשוב לך ולשמור את ההתלבטות.</p>
           <div className="welcome-actions">
             <a className="button welcome-cta" href="/account" target="_top">יצירת חשבון <span aria-hidden="true">←</span></a>
             <a className="button secondary welcome-guest-cta" href="/map" target="_top">כניסה כאורח</a>
           </div>
+          <p className="welcome-login-note">חשבון זמין כרגע דרך ChatGPT בלבד. כאורח אפשר להתחיל מיד.</p>
         </div>
       </section>
       <section className="welcome-section welcome-alternatives" aria-labelledby="alternatives-title">
