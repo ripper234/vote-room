@@ -1,6 +1,6 @@
 # חדר בחירה / Vote Room
 
-[חדר בחירה](https://voteroom.ripper234.chatgpt.site) is a Hebrew, open-access tool for thinking through an Israeli parliamentary vote. It helps visitors compare party lists, read short summaries and primary sources, watch leaders speak, and record their own priorities and impressions. It does not recommend a party or require an account.
+[חדר בחירה](https://voteroom.ripper234.chatgpt.site) is a Hebrew, open-access tool for thinking through an Israeli parliamentary vote. It helps visitors compare party lists, read short summaries and primary sources, watch candidates speak, and record their own priorities and impressions. It does not recommend a party or require an account.
 
 The home page introduces the project and links to other election tools. The personal comparison map is at [למפה](https://voteroom.ripper234.chatgpt.site/map); the earlier `/welcome` URL remains available.
 
@@ -22,6 +22,8 @@ corepack pnpm run build
 ```
 
 For interactive local development, run `corepack pnpm run dev`. The decision API needs a Cloudflare D1 database bound as `DB`. After a build, initialize the local database with the migration in `drizzle/` using Wrangler, or configure the same D1 binding in your own Cloudflare environment. Local runtime data in `.wrangler/` is ignored by Git.
+
+Run `npm run test:smoke` to check the guest save flow, a party page, local mock ChatGPT sign-in, account import, and sign-out. It creates a disposable local copy and D1 database, uses only the fake `seedy@sites.test` identity, and removes the copy afterward. This checks HTTP flows; it does not click the interface in a browser or contact the production voter database.
 
 The hosted deployment uses Sites and the binding declared in `.openai/hosting.json`. Publishing changes requires both a Sites deployment and an update to this public repository. See `AGENTS.md` for the release rule.
 
