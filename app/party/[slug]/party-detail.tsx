@@ -5,6 +5,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } fr
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Party, PartyVideo, PublicVoice } from "@/lib/parties";
+import { fairReadings } from "@/lib/fair-readings";
 import { SaveIndicator, SaveNavigationWarning, useDecision } from "@/lib/use-decision";
 
 const statuses = [
@@ -94,6 +95,7 @@ export default function PartyDetail({ party }: { party: Party }) {
   const misaligned = state?.priorities.filter((tag) => ratings[tag] === "misaligned") ?? [];
   const unclear = state?.priorities.filter((tag) => ratings[tag] === "unclear") ?? [];
   const featuredVideos = party.featuredVideos ?? [];
+  const fairReading = fairReadings[party.slug];
   const supportingVoices = party.publicVoices?.filter((voice) => voice.stance === "support") ?? [];
   const opposingVoices = party.publicVoices?.filter((voice) => voice.stance === "against") ?? [];
 
@@ -185,6 +187,31 @@ export default function PartyDetail({ party }: { party: Party }) {
               ) : featuredVideos.length ? <Video video={featuredVideos[0]} /> : <p className="muted small">עדיין לא נבחר כאן קטע קצר שאפשר לאמת. סרטונים ארוכים יותר מופיעים בהמשך הדף.</p>}
             </div>
           </section>
+          {fairReading && <section className="panel fair-reading" aria-labelledby="fair-reading-title">
+            <div className="panel-header">
+              <h2 id="fair-reading-title">להבין לפני שמחליטים</h2>
+              <a className="small" href="/about#fair-reading-method">איך ניסחנו את זה?</a>
+            </div>
+            <div className="panel-body">
+              <p className="muted small fair-reading-note">ניסיון הוגן לנסח את העמדה, לא ציטוט של הרשימה או המלצת הצבעה.</p>
+              <div className="fair-reading-grid">
+                <div>
+                  <span className="field-label">הטיעון החזק בעד</span>
+                  <p>{fairReading.argument}</p>
+                  <div className="fair-reading-sources">{fairReading.sources.map((source) =>
+                    <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.label} ↗</a>
+                  )}</div>
+                </div>
+                <div>
+                  <span className="field-label">מה מתנגש כאן</span>
+                  <p>{fairReading.needs}</p>
+                  <span className="field-label">השאלה הקשה</span>
+                  <p>{fairReading.question}</p>
+                </div>
+              </div>
+              <p className="fair-reading-prompt">לשיחה: מה שמעתי? מה זה מעורר בי? מה חשוב לי? מה הייתי רוצה לשאול?</p>
+            </div>
+          </section>}
           <section className="panel" aria-labelledby="voices-title">
             <div className="panel-header"><h2 id="voices-title">מי תומך, מי מסתייג</h2></div>
             <div className="panel-body">
