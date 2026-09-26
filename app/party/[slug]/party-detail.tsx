@@ -142,9 +142,9 @@ export default function PartyDetail({ party }: { party: Party }) {
         <div className="panel-body">
           <p className="brief-lead">{party.tldr}</p>
           {party.electionStatus && <p className="election-status"><strong>מצב ההתמודדות: </strong>{party.electionStatus.text}{" "}<a href={party.electionStatus.url} target="_blank" rel="noopener noreferrer">מקור ↗</a></p>}
-          {state && (
+          {state && (state.priorities.length > 0 || Boolean(state.partyNotes[party.slug])) && (
             <>
-            {state.orientation !== "explore" && state.orientation !== party.bloc && <p className="muted small" style={{ marginTop: -6, lineHeight: 1.5 }}>הרשימה מחוץ למסלול הפתיחה שבחרת, אבל עדיין אפשר לבדוק אותה.</p>}
+            {state.orientation && state.orientation !== "explore" && state.orientation !== party.bloc && <p className="muted small" style={{ marginTop: -6, lineHeight: 1.5 }}>הרשימה מחוץ למסלול הפתיחה שבחרת, אבל עדיין אפשר לבדוק אותה.</p>}
             <div className="brief-grid">
               <div>
                 <span className="field-label">מה חשוב לי כאן</span>
