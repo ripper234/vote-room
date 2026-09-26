@@ -34,18 +34,18 @@ export default function Welcome() {
     <main className="shell welcome-page">
       <section className="welcome-hero" aria-labelledby="welcome-title">
         <div>
-          <span className="eyebrow">ברוכים הבאים לחדר בחירה</span>
-          <h1 id="welcome-title">מקום להתלבט, לחזור, ולשנות את דעתך.</h1>
-          <p>הבחירה בקלפי לא תמיד נסגרת בשאלון אחד. כאן אפשר להכיר רשימות ואנשים, לסמן מה חשוב לך ולשמור את המחשבות שלך לאורך הדרך.</p>
+          <span className="welcome-kicker">למה עוד אתר בחירות?</span>
+          <h1 id="welcome-title">כי בחירה לא נגמרת בשאלון.</h1>
+          <p>כאן מכירים את האנשים ואת העמדות, שומרים שאלות והתרשמויות, וחוזרים אליהן כשמשהו משתנה.</p>
           <Link className="button welcome-cta" href="/map">למפת הבחירה שלי <span aria-hidden="true">←</span></Link>
-          <span className="welcome-guest-note">אפשר להתחיל בלי חשבון ובלי להתחייב לבחירה.</span>
-        </div>
-        <div className="welcome-principle" aria-label="איך מתקבלת התמונה האישית">
-          <span className="welcome-principle-label">העיקרון</span>
-          <strong>את ההתרשמות מסמנים אתם.</strong>
-          <p>הציון האישי, אם בוחרים לתת ציון, מחושב מהסימונים שלכם בדפי הרשימות. האתר לא מחליט עבורכם למי להצביע.</p>
+          <span className="welcome-guest-note">אפשר להתחיל בלי חשבון.</span>
         </div>
       </section>
+      <div className="welcome-principle" aria-label="איך מתקבלת התמונה האישית">
+        <span className="welcome-principle-label">העיקרון</span>
+        <strong>את ההתרשמות מסמנים אתם.</strong>
+        <p>ציון אישי מופיע רק אחרי דירוג נושאים בדפי הרשימות, ומחושב מהסימונים שלכם. ההחלטה נשארת שלכם.</p>
+      </div>
 
       <section className="welcome-section" aria-labelledby="welcome-how-title">
         <div className="welcome-section-heading">
