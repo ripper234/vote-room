@@ -40,10 +40,25 @@ function Video({ video }: { video: Party["videos"][number] }) {
 }
 
 export default function PartyDetail({ party }: { party: Party }) {
-  const { state, saveState, update, retry } = useDecision();
+  const { state, saveState, update, retry, waitForSave } = useDecision();
   const [draft, setDraft] = useState<string | null>(null);
   useEffect(() => { setDraft(null); }, [party.slug]);
   const note = state?.partyNotes[party.slug] ?? "";
+  useEffect(() => {
+    if (draft === null || !state || draft === note) return;
+    const timer = window.setTimeout(() => saveNote(draft), 650);
+    return () => window.clearTimeout(timer);
+  }, [draft, note, update, party.slug]);
+  function saveNote(value: string) {
+    if (!state || value === note) return;
+    void update((previous) => ({ ...previous, partyNotes: { ...previous.partyNotes, [party.slug]: value } }), "party_note");
+    setDraft((current) => current === value ? null : current);
+  }
+  async function goBack(event: React.MouseEvent<HTMLAnchorElement>) {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (await waitForSave()) window.location.assign("/");
+  }
   const relevant = party.highlights.filter((item) => state?.priorities.includes(item.topic));
   const unfilled = state?.priorities.filter((tag) => !party.highlights.some((item) => item.topic === tag)) ?? [];
   const ratings = state?.issueAssessments?.[party.slug] ?? {};
@@ -53,13 +68,13 @@ export default function PartyDetail({ party }: { party: Party }) {
   return (
     <main className="shell">
       <div className="detail-hero" style={{ "--party-accent": party.color } as React.CSSProperties}>
-        <a href="/" style={{ color: "#c7d8ff", textUnderlineOffset: 4 }}>← חזרה למפה שלי</a>
+        <a href="/" onClick={goBack} style={{ color: "#c7d8ff", textUnderlineOffset: 4 }}>← חזרה למפה שלי</a>
         <div className="eyebrow" style={{ marginTop: 22 }}>דף רשימה · מידע עד 25.9.2026</div>
         <h1>{party.name}</h1>
         <p>{party.leaders} · {party.summary}</p>
       </div>
       <section className="panel brief-panel" aria-labelledby="brief-title">
-        <div className="panel-header"><h2 id="brief-title">בקצרה</h2><SaveIndicator status={saveState} retry={retry} /></div>
+        <div className="panel-header"><h2 id="brief-title">בקצרה</h2><SaveIndicator status={saveState === "error" ? "error" : draft !== null && draft !== note ? "saving" : saveState} retry={retry} /></div>
         <div className="panel-body">
           <p className="brief-lead">{party.tldr}</p>
           {state && (
@@ -173,7 +188,7 @@ export default function PartyDetail({ party }: { party: Party }) {
         </div>
         <aside className="section-stack">
           <section className="panel">
-            <div className="panel-header"><h2>ההתרשמות שלי</h2><SaveIndicator status={saveState} retry={retry} /></div>
+            <div className="panel-header"><h2>ההתרשמות שלי</h2><SaveIndicator status={saveState === "error" ? "error" : draft !== null && draft !== note ? "saving" : saveState} retry={retry} /></div>
             {!state ? <div className="loading">טוען את הרשימות שלך…</div> : (
               <div className="panel-body">
                 <span className="field-label">איפה היא עומדת אצלי כרגע?</span>
@@ -193,12 +208,10 @@ export default function PartyDetail({ party }: { party: Party }) {
                   placeholder="דברים שקלטת מהנאום, קו אדום, שאלה פתוחה…"
                   value={draft ?? note}
                   onChange={(event) => setDraft(event.target.value)}
+                  onBlur={() => draft !== null && saveNote(draft)}
                   maxLength={5000}
                 />
-                <button className="button" style={{ marginTop: 11 }} type="button" disabled={draft === null || draft === note}
-                  onClick={() => { const value = draft ?? note; update((previous) => ({ ...previous, partyNotes: { ...previous.partyNotes, [party.slug]: value } }), "party_note"); setDraft(null); }}>
-                  שמור את ההתרשמות
-                </button>
+                <p className="muted small" style={{ margin: "8px 0 0" }}>ההתרשמות נשמרת אוטומטית.</p>
               </div>
             )}
           </section>

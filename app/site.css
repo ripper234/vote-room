@@ -19,7 +19,17 @@ h2 { font-size: 1.35rem; letter-spacing: -.02em; }
 .intro h1 { margin: 8px 0 9px; }
 .intro p { color: #556680; margin: 0; line-height: 1.5; }
 .date-stamp { flex: none; color: #677791; font-size: .82rem; }
-.workspace-grid { display: grid; grid-template-columns: minmax(280px, 395px) minmax(0, 1fr); gap: 20px; align-items: start; padding-bottom: 48px; }
+.workspace-grid { display: grid; gap: 30px; align-items: start; padding-bottom: 48px; }
+#results,#my-compass { scroll-margin-top: 20px; }
+#my-compass { width: 100%; max-width: 900px; margin-inline: auto; }
+.account-message { margin: -4px 0 17px; color: #536780; font-size: .9rem; }
+.account-message a { color: #2345bd; font-weight: 700; }
+.result-intro { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 16px 24px 4px; color: #425574; line-height: 1.5; }
+.result-intro > span { flex: 1 1 320px; }
+.result-intro p,.result-intro small { flex-basis: 100%; margin: 0; }
+.result-intro small { color: #63738b; font-size: .82rem; }
+.result-header-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.result-action { display: inline-block; text-decoration: none; margin-top: 13px; }
 .orientation-panel { max-width: 920px; margin: 6px auto 52px; }
 .orientation-options { display: grid; gap: 12px; padding: 20px 24px 18px; }
 .orientation-card { display: grid; grid-template-columns: 1fr auto; gap: 5px 16px; text-align: right; width: 100%; border: 1px solid #d3dfed; border-radius: 13px; background: #fff; padding: 18px 20px; color: #182d55; }
@@ -42,6 +52,10 @@ h2 { font-size: 1.35rem; letter-spacing: -.02em; }
 .tag { border: 1px solid #cbd7ea; border-radius: 999px; background: white; color: #324666; padding: 9px 12px; line-height: 1.2; font-size: .88rem; transition: background .15s, color .15s; }
 .tag[data-active="true"] { color: #fff; border-color: #2444d8; background: #2444d8; }
 .tag:hover { border-color: #2444d8; }
+.custom-tag { display: inline-flex; align-items: stretch; }
+.custom-tag .tag { border-radius: 0 999px 999px 0; }
+.remove-tag { border: 1px solid #cbd7ea; border-right: 0; border-radius: 999px 0 0 999px; background: #fff; color: #394d6d; padding: 0 11px; font-size: 1.1rem; }
+.remove-tag:hover { background: #eff3ff; }
 .tag:focus-visible,.button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible { outline: 3px solid #91a8f7; outline-offset: 2px; }
 .field-label { display: block; font-weight: 700; margin: 0 0 11px; }
 .divider { border: 0; border-top: 1px solid #e1e8f1; margin: 22px 0; }
@@ -62,8 +76,8 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .party-card { position: relative; display: grid; grid-template-columns: 5px minmax(0,1fr) auto; gap: 18px; align-items: center; min-height: 118px; overflow: hidden; border: 1px solid #dce4ee; border-radius: 13px; background: #fff; transition: transform .15s, border-color .15s, box-shadow .15s, opacity .2s; }
 .party-card:hover { transform: translateY(-2px); border-color: #a8b8d1; box-shadow: 0 8px 22px rgba(22,37,65,.08); }
 .party-card[data-reaction="like"] { border-color: #9fb3e9; background: #f8faff; }
-.party-card[data-reaction="dislike"] { opacity: .52; }
-.party-card[data-reaction="dislike"]:hover,.party-card[data-reaction="dislike"]:has(:focus-visible) { opacity: 1; }
+.party-card[data-reaction="dislike"] { background: #f6f7fa; border-color: #e6eaf1; }
+.party-card[data-reaction="dislike"] .party-band { opacity: .35; }
 .party-band { align-self: stretch; background: var(--party-accent); }
 .party-card-link { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: center; align-self: stretch; color: inherit; text-decoration: none; }
 .party-card-link::after { content: ""; position: absolute; inset: 0; }
@@ -72,9 +86,12 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .party-card h3 { margin: 0 0 6px; font-size: 1.28rem; }
 .party-card p { margin: 0; color: #63738b; font-size: .9rem; line-height: 1.4; }
 .party-card .meta { margin-top: 9px; font-size: .78rem; color: #516cc1; font-weight: 700; }
+.personal-result { display: grid; gap: 4px; padding-top: 10px; color: #445a78; line-height: 1.45; font-size: .88rem; }
+.personal-result strong { color: #2444a4; }
+.personal-result span { max-width: 75ch; }
 .arrow { font-size: 1.65rem; color: #7183a3; margin-left: 20px; }
 .party-votes { position: relative; z-index: 1; display: grid; gap: 7px; margin-left: 16px; }
-.vote-button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 6px 9px; border: 1px solid #d0daea; border-radius: 8px; background: #fff; color: #4b5f7a; font-size: .78rem; font-weight: 700; white-space: nowrap; }
+.vote-button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 6px 9px; border: 1px solid #d0daea; border-radius: 8px; background: #fff; color: #4b5f7a; font-size: .875rem; font-weight: 700; white-space: nowrap; }
 .vote-button:hover { border-color: #8fa5cc; color: #1e3975; }
 .vote-button[aria-pressed="true"] { border-color: #3153c4; background: #eaf0ff; color: #1d3db3; }
 .vote-button:focus-visible { outline: 3px solid #91a8f7; outline-offset: 2px; }
@@ -115,7 +132,7 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .about-page .panel-body { padding: 30px; font-size: 1.05rem; line-height: 1.75; }
 .about-page p:last-child { margin-bottom: 0; }
 @media (max-width: 850px) {
-  .workspace-grid,.detail-grid,.brief-grid { grid-template-columns: 1fr; }
+  .detail-grid,.brief-grid { grid-template-columns: 1fr; }
   .intro { align-items: start; }
   .date-stamp { display: none; }
 }
@@ -125,6 +142,7 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
   .brand { font-size: 1rem; }
   .brand-mark { width: 30px; height: 30px; }
   .nav { gap: 14px; }
+  .topbar-inner { flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px; gap: 8px 14px; }
   .nav a { font-size: .8rem; }
   .intro { padding: 27px 0 20px; }
   .orientation-options { padding: 16px; }
@@ -140,6 +158,7 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
   .party-votes { grid-column: 2; display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0 12px 12px 0; }
   .arrow { margin-left: 12px; }
   .party-card h3 { font-size: 1.14rem; }
+  .result-intro { padding: 14px 18px 4px; }
   .arrow { margin-left: 12px; }
   .detail-hero { margin-top: 18px; padding: 23px 20px; }
   .roadmap-item { grid-template-columns: 1fr; gap: 4px; }

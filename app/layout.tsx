@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { chatGPTSignInPath, chatGPTSignOutPath, getChatGPTUser } from "./chatgpt-auth";
 import "./globals.css";
 import "./site.css";
 
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export const dynamic = "force-dynamic";
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const user = await getChatGPTUser();
   return (
     <html lang="he" dir="rtl">
       <body>
@@ -19,6 +23,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <nav className="nav" aria-label="ניווט ראשי">
               <Link href="/">המפה שלי</Link>
               <Link href="/roadmap">לאן ממשיכים</Link>
+              {user
+                ? <a href={chatGPTSignOutPath("/")} target="_top" title={user.email}>התנתקות</a>
+                : <a href={chatGPTSignInPath("/")} target="_top">כניסה ושמירה</a>}
             </nav>
           </div>
         </header>

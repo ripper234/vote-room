@@ -4,8 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { coalitionChoices, emptyDecision, netanyahuChoices, orientationChoices, parties, priorityOptions, type DecisionState } from "./parties";
 
 type SaveState = "loading" | "saved" | "saving" | "error";
-type Pending = { state: DecisionState; kind: string; resolve?: (saved: boolean) => void };
+type Pending = {
+  apply: (previous: DecisionState) => DecisionState;
+  state: DecisionState;
+  kind: string;
+  resolve?: (saved: boolean) => void;
+};
 const KEY_STORAGE = "bechira-recovery-key-v1";
+const PREVIOUS_KEY_STORAGE = "vote-room-previous-recovery-key-v1";
 
 function getOrCreateKey(): string {
   const existing = window.localStorage.getItem(KEY_STORAGE);
@@ -20,17 +26,22 @@ export function useDecision() {
   const [state, setState] = useState<DecisionState | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [recoveryKey, setRecoveryKey] = useState<string | null>(null);
+  const [previousRecoveryKey, setPreviousRecoveryKey] = useState<string | null>(null);
+  const [account, setAccount] = useState<{ email: string } | null>(null);
   const keyRef = useRef("");
   const revision = useRef(0);
   const current = useRef<DecisionState>(emptyDecision);
   const queue = useRef<Pending[]>([]);
   const busy = useRef(false);
+  const errored = useRef(false);
+  const waiters = useRef<Array<(saved: boolean) => void>>([]);
 
   useEffect(() => {
     let live = true;
     try {
       keyRef.current = getOrCreateKey();
       setRecoveryKey(keyRef.current);
+      setPreviousRecoveryKey(window.localStorage.getItem(PREVIOUS_KEY_STORAGE));
     } catch {
       setSaveState("error");
       return () => { live = false; };
@@ -38,13 +49,14 @@ export function useDecision() {
     fetch("/api/decision", { cache: "no-store", headers: { "x-decision-key": keyRef.current } })
       .then(async (response) => {
         if (!response.ok) throw new Error("storage");
-        return response.json() as Promise<{ revision: number; state: DecisionState }>;
+        return response.json() as Promise<{ revision: number; state: DecisionState; account: { email: string } | null }>;
       })
       .then((data) => {
         if (!live) return;
         revision.current = data.revision;
         current.current = { ...emptyDecision, ...data.state };
         setState(current.current);
+        setAccount(data.account);
         setSaveState("saved");
       })
       .catch(() => {
@@ -56,22 +68,49 @@ export function useDecision() {
   const drain = useCallback(async () => {
     if (busy.current) return;
     busy.current = true;
+    errored.current = false;
+    let conflicts = 0;
     while (queue.current.length) {
       const item = queue.current[0];
       try {
         const response = await fetch("/api/decision", {
-      method: "POST",
+          method: "POST",
           headers: { "Content-Type": "application/json", "x-decision-key": keyRef.current },
           body: JSON.stringify({ ...item, expectedRevision: revision.current }),
           keepalive: true,
         });
-        if (!response.ok) throw new Error(response.status === 409 ? "conflict" : "storage");
+        if (response.status === 409) {
+          if (++conflicts > 5) throw new Error("too_many_conflicts");
+          const latestResponse = await fetch("/api/decision", {
+            cache: "no-store", headers: { "x-decision-key": keyRef.current },
+          });
+          if (!latestResponse.ok) throw new Error("storage");
+          const latest = await latestResponse.json() as { revision: number; state: DecisionState };
+          revision.current = latest.revision;
+          // A lost response can mean the write succeeded. Do not replay a
+          // toggle in that case.
+          if (JSON.stringify(latest.state) === JSON.stringify(item.state)) {
+            queue.current.shift();
+            item.resolve?.(true);
+          }
+          let rebased = { ...emptyDecision, ...latest.state };
+          for (const pending of queue.current) {
+            rebased = pending.apply(rebased);
+            pending.state = rebased;
+          }
+          current.current = rebased;
+          setState(rebased);
+          continue;
+        }
+        if (!response.ok) throw new Error("storage");
         const result = await response.json() as { revision: number };
         revision.current = result.revision;
         queue.current.shift();
         item.resolve?.(true);
       } catch {
         queue.current.forEach((pending) => { pending.resolve?.(false); pending.resolve = undefined; });
+        errored.current = true;
+        waiters.current.splice(0).forEach((resolve) => resolve(false));
         setSaveState("error");
         busy.current = false;
         return;
@@ -79,24 +118,29 @@ export function useDecision() {
     }
     setSaveState("saved");
     busy.current = false;
+    waiters.current.splice(0).forEach((resolve) => resolve(true));
   }, []);
 
-  const change = useCallback((next: DecisionState, kind: string): Promise<boolean> => {
+  const update = useCallback((fn: (previous: DecisionState) => DecisionState, kind: string): Promise<boolean> => {
+    const next = fn(current.current);
     current.current = next;
     setState(next);
     return new Promise((resolve) => {
-      queue.current.push({ state: next, kind, resolve });
+      queue.current.push({ apply: fn, state: next, kind, resolve });
       setSaveState("saving");
       void drain();
     });
   }, [drain]);
 
-  const update = useCallback((fn: (previous: DecisionState) => DecisionState, kind: string) => {
-    return change(fn(current.current), kind);
-  }, [change]);
+  const waitForSave = useCallback((): Promise<boolean> => {
+    if (errored.current) return Promise.resolve(false);
+    if (!queue.current.length && !busy.current) return Promise.resolve(true);
+    return new Promise((resolve) => waiters.current.push(resolve));
+  }, []);
 
   const retry = useCallback(() => {
     if (!queue.current.length) { window.location.reload(); return; }
+    errored.current = false;
     setSaveState("saving");
     void drain();
   }, [drain]);
@@ -105,11 +149,20 @@ export function useDecision() {
     const clean = key.trim().toLowerCase();
     if (!/^[a-f0-9]{64}$/.test(clean)) return false;
     try {
+      const existing = window.localStorage.getItem(KEY_STORAGE);
+      if (existing && existing !== clean) {
+        window.localStorage.setItem(PREVIOUS_KEY_STORAGE, existing);
+        setPreviousRecoveryKey(existing);
+      }
       window.localStorage.setItem(KEY_STORAGE, clean);
       window.location.reload();
       return true;
     } catch { return false; }
   }, []);
+
+  const restorePreviousKey = useCallback(() => {
+    if (previousRecoveryKey) restoreRecoveryKey(previousRecoveryKey);
+  }, [previousRecoveryKey, restoreRecoveryKey]);
 
   useEffect(() => {
     if (!state) return;
@@ -195,7 +248,7 @@ export function useDecision() {
     return () => lifecycle.abort();
   }, [state, update]);
 
-  return { state, saveState, update, retry, recoveryKey, restoreRecoveryKey };
+  return { state, saveState, update, retry, waitForSave, recoveryKey, previousRecoveryKey, restoreRecoveryKey, restorePreviousKey, account };
 }
 
 const priorityOptionsSet = new Set(priorityOptions);

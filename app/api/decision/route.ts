@@ -16,6 +16,13 @@ async function anonymousUserId(request: Request): Promise<string | null> {
   return "anon:" + Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function signedInUser(request: Request): { id: string; email: string } | null {
+  // These identity headers are supplied by Sites after Sign in with ChatGPT.
+  const id = request.headers.get("oai-authenticated-user-id");
+  const email = request.headers.get("oai-authenticated-user-email");
+  return id && email ? { id: `chatgpt:${id}`, email } : null;
+}
+
 function validState(input: unknown): input is DecisionState {
   if (!input || typeof input !== "object") return false;
   const state = input as Partial<DecisionState>;
@@ -47,10 +54,24 @@ function validState(input: unknown): input is DecisionState {
 }
 
 export async function GET(request: Request) {
-  const userId = await anonymousUserId(request);
+  const account = signedInUser(request);
+  const anonymousId = await anonymousUserId(request);
+  const userId = account?.id ?? anonymousId;
   if (!userId) return Response.json({ error: "invalid_device_key" }, { status: 400, headers: noStore });
   try {
-    return Response.json(await readDecision(userId), { headers: noStore });
+    let decision = await readDecision(userId);
+    let imported = false;
+    // A first sign-in adopts the visitor's existing device map. A returning
+    // account always wins; its history is never replaced by a device copy.
+    if (account && decision.revision === 0 && anonymousId) {
+      const local = await readDecision(anonymousId);
+      if (local.revision > 0) {
+        const result = await writeDecision(account.id, 0, local.state, "account_import");
+        decision = await readDecision(account.id);
+        imported = !!result;
+      }
+    }
+    return Response.json({ ...decision, account: account ? { email: account.email } : null, imported }, { headers: noStore });
   } catch (error) {
     console.error("decision read failed", error);
     return Response.json({ error: "temporary_storage_error" }, { status: 503, headers: noStore });
@@ -58,7 +79,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const userId = await anonymousUserId(request);
+  const userId = signedInUser(request)?.id ?? await anonymousUserId(request);
   if (!userId) return Response.json({ error: "invalid_device_key" }, { status: 400, headers: noStore });
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) {
