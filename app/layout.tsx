@@ -22,6 +22,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <Link className="brand" href="/"><span className="brand-mark" aria-hidden="true">✓</span>חדר בחירה</Link>
             <nav className="nav" aria-label="ניווט ראשי">
               <Link href="/">המפה שלי</Link>
+              <Link href="/welcome">איך זה עובד</Link>
               <Link href="/roadmap">לאן ממשיכים</Link>
               {user
                 ? <a href={chatGPTSignOutPath("/")} target="_top" title={user.email}>התנתקות</a>
