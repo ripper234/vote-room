@@ -261,3 +261,26 @@ export function SaveIndicator({ status, retry }: { status: SaveState; retry: () 
     {status === "saved" ? "כל השינויים נשמרו" : status === "saving" ? "שומר…" : "טוען…"}
   </span>;
 }
+
+export function SaveNavigationWarning({ destination, retry, waitForSave, onClose }: {
+  destination: string;
+  retry: () => void;
+  waitForSave: () => Promise<boolean>;
+  onClose: () => void;
+}) {
+  async function retryAndGo() {
+    retry();
+    if (await waitForSave()) window.location.assign(destination);
+  }
+
+  return <div className="save-navigation-warning" role="alert">
+    <button type="button" className="save-navigation-close" onClick={onClose} aria-label="סגור">×</button>
+    <strong>לא הצלחנו לשמור לפני המעבר.</strong>
+    <p>אפשר לנסות שוב או להמשיך בלי לשמור את השינויים האחרונים.</p>
+    <div className="save-navigation-actions">
+      <button type="button" className="button" onClick={retryAndGo}>נסה שוב ועבור</button>
+      <a className="button secondary" href={destination}>המשך בלי לשמור</a>
+      <a href="/account">יצירת חשבון</a>
+    </div>
+  </div>;
+}

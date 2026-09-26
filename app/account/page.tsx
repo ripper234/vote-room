@@ -24,7 +24,7 @@ export default async function AccountPage() {
           ) : (
             <>
               <p className="account-lead"><strong>כרגע הכניסה היחידה לחשבון היא עם ChatGPT.</strong> אין עדיין Google או אימייל עצמאי.</p>
-              <p className="account-detail">עם חשבון אפשר לחזור לבחירות שלך ממכשיר אחר. כאורח, הן נשמרות במכשיר הזה.</p>
+              <p className="account-detail">עם חשבון אפשר לחזור לבחירות שלך ממכשיר אחר. כאורח, הן נשמרות במכשיר הזה. הכפתור יפתח את מסך הכניסה של ChatGPT.</p>
               <div className="welcome-actions">
                 <a className="button welcome-cta" href={chatGPTSignInPath("/map")} target="_top">כניסה עם ChatGPT ←</a>
                 <a className="button secondary welcome-guest-cta" href="/map" target="_top">כניסה כאורח</a>

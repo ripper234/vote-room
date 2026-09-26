@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Party, PartyVideo, PublicVoice } from "@/lib/parties";
-import { SaveIndicator, useDecision } from "@/lib/use-decision";
+import { SaveIndicator, SaveNavigationWarning, useDecision } from "@/lib/use-decision";
 
 const statuses = [
   { value: "open", label: "פתוח לבדיקה" },
@@ -64,6 +64,7 @@ function VoiceColumn({ title, items, empty }: { title: string; items: PublicVoic
 export default function PartyDetail({ party }: { party: Party }) {
   const { state, saveState, update, retry, waitForSave } = useDecision();
   const [draft, setDraft] = useState<string | null>(null);
+  const [blockedBack, setBlockedBack] = useState(false);
   useEffect(() => { setDraft(null); }, [party.slug]);
   const note = state?.partyNotes[party.slug] ?? "";
   useEffect(() => {
@@ -80,6 +81,7 @@ export default function PartyDetail({ party }: { party: Party }) {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     if (await waitForSave()) window.location.assign("/map");
+    else setBlockedBack(true);
   }
   const relevant = party.highlights.filter((item) => state?.priorities.includes(item.topic));
   const unfilled = state?.priorities.filter((tag) => !party.highlights.some((item) => item.topic === tag)) ?? [];
@@ -226,7 +228,7 @@ export default function PartyDetail({ party }: { party: Party }) {
         <aside className="section-stack">
           <section className="panel">
             <div className="panel-header"><h2>ההתרשמות שלי</h2><SaveIndicator status={saveState === "error" ? "error" : draft !== null && draft !== note ? "saving" : saveState} retry={retry} /></div>
-            {!state ? <div className="loading">טוען את הרשימות שלך…</div> : (
+            {!state ? <div className="panel-body">{saveState === "error" ? <p>המפה האישית לא נטענה. אפשר לקרוא את דף הרשימה ולנסות שוב, או <a href="/account">ליצור חשבון</a>. <button type="button" className="button secondary" onClick={retry}>נסה שוב</button></p> : <div className="loading">טוען את ההתרשמות שלך…</div>}</div> : (
               <div className="panel-body">
                 <span className="field-label">איפה היא עומדת אצלי כרגע?</span>
                 <RadioGroup
@@ -254,6 +256,7 @@ export default function PartyDetail({ party }: { party: Party }) {
           </section>
         </aside>
       </div>
+      {blockedBack && <SaveNavigationWarning destination="/map" retry={retry} waitForSave={waitForSave} onClose={() => setBlockedBack(false)} />}
     </main>
   );
 }

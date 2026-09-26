@@ -5,7 +5,7 @@ import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { coalitionChoices, coreParties, netanyahuChoices, orientationChoices, parties, priorityOptions } from "@/lib/parties";
-import { SaveIndicator, useDecision } from "@/lib/use-decision";
+import { SaveIndicator, SaveNavigationWarning, useDecision } from "@/lib/use-decision";
 
 const statusLabels: Record<string, string> = {
   open: "פתוח לבדיקה",
@@ -21,6 +21,9 @@ export default function Home() {
   const [showAll, setShowAll] = useState(false);
   const [importKey, setImportKey] = useState("");
   const [keyError, setKeyError] = useState(false);
+  const [tagError, setTagError] = useState("");
+  const [copyStatus, setCopyStatus] = useState("");
+  const [blockedPartyHref, setBlockedPartyHref] = useState("");
   const selected = state?.priorities ?? [];
   const pathParties = showAll || state?.orientation === "explore"
     ? parties
@@ -70,6 +73,7 @@ export default function Home() {
     event.preventDefault();
     const href = event.currentTarget.href;
     if (await waitForSave()) window.location.assign(href);
+    else setBlockedPartyHref(href);
   }
 
   function togglePriority(label: string, checked: boolean) {
@@ -84,13 +88,17 @@ export default function Home() {
   function addTag(event: React.FormEvent) {
     event.preventDefault();
     const tag = custom.trim().slice(0, 80);
-    if (!tag || !state || state.customTags.includes(tag) || priorityOptions.includes(tag) || state.customTags.length >= 20) return;
+    if (!tag) { setTagError("כתוב נושא לפני ההוספה."); return; }
+    if (!state) { setTagError("המפה עדיין נטענת. נסה שוב בעוד רגע."); return; }
+    if (state.customTags.includes(tag) || priorityOptions.includes(tag)) { setTagError("הנושא הזה כבר במצפן."); return; }
+    if (state.customTags.length >= 20) { setTagError("אפשר להוסיף עד 20 נושאים."); return; }
     update((previous) => ({
       ...previous,
       customTags: [...previous.customTags, tag],
       priorities: [...previous.priorities, tag],
     }), "custom_tag");
     setCustom("");
+    setTagError("");
   }
 
   function togglePartyVote(slug: string, vote: "positive" | "out") {
@@ -103,6 +111,16 @@ export default function Home() {
     }, "party_status");
   }
 
+  async function copyRecoveryKey() {
+    if (!recoveryKey) { setCopyStatus("מפתח השחזור לא זמין כרגע."); return; }
+    try {
+      await navigator.clipboard.writeText(recoveryKey);
+      setCopyStatus("הועתק.");
+    } catch {
+      setCopyStatus("ההעתקה נכשלה. אפשר לסמן את המפתח ולהעתיק ידנית.");
+    }
+  }
+
   return (
     <main className="shell">
       <div className="intro">
@@ -113,7 +131,15 @@ export default function Home() {
         </div>
         <span className="date-stamp">מידע על הרשימות: 26.9.2026</span>
       </div>
-      {!state ? (
+      {!state ? saveState === "error" ? (
+        <section className="panel panel-body load-error" role="alert">
+          <h2>לא הצלחנו לטעון את המפה</h2>
+          <p>אפשר לקרוא על הרשימות גם בלי שמירה. נסה שוב כדי לחזור להעדפות שלך, או עבור לחשבון.</p>
+          <div className="load-error-actions"><button type="button" className="button" onClick={retry}>נסה שוב</button><a className="button secondary" href="/account">יצירת חשבון</a></div>
+          <h3>דפי הרשימות</h3>
+          <ul className="fallback-party-list">{parties.map((party) => <li key={party.slug}><a href={`/party/${party.slug}`}>{party.name} ←</a></li>)}</ul>
+        </section>
+      ) : (
         <section className="panel loading"><SaveIndicator status={saveState} retry={retry} /> <p style={{ margin: "16px 0 0" }}>טוען את המפה האישית שלך…</p></section>
       ) : !state.orientation ? (
         <section className="panel orientation-panel" aria-labelledby="orientation-title">
@@ -247,9 +273,10 @@ export default function Home() {
                 ))}
               </div>
               <form className="input-row" style={{ marginTop: 14 }} onSubmit={addTag}>
-                <input className="field" value={custom} onChange={(event) => setCustom(event.target.value)} maxLength={80} placeholder="נושא נוסף שחשוב לי" aria-label="נושא נוסף" />
+                <input className="field" value={custom} onChange={(event) => { setCustom(event.target.value); setTagError(""); }} maxLength={80} placeholder="נושא נוסף שחשוב לי" aria-label="נושא נוסף" />
                 <button className="button secondary" type="submit">הוסף</button>
               </form>
+              {tagError && <p className="form-feedback" role="alert">{tagError}</p>}
               <hr className="divider" />
               <span className="field-label">שיתוף פעולה עם מפלגות ערביות</span>
               <RadioGroup
@@ -299,8 +326,9 @@ export default function Home() {
                 <p className="muted small">המפתח הזה נותן גישה להחלטות שלך בלי חשבון. שמור אותו במקום פרטי. אפשר גם להיכנס לחשבון כדי להמשיך ממכשיר אחר.</p>
                 <div className="input-row">
                   <input className="field" type="password" readOnly value={recoveryKey ?? ""} aria-label="מפתח השחזור שלך" onFocus={(event) => event.currentTarget.type = "text"} onBlur={(event) => event.currentTarget.type = "password"} />
-                  <button className="button secondary" type="button" onClick={() => recoveryKey && navigator.clipboard.writeText(recoveryKey)}>העתק</button>
+                  <button className="button secondary" type="button" onClick={copyRecoveryKey}>העתק</button>
                 </div>
+                {copyStatus && <p className="form-feedback" role="status">{copyStatus}</p>}
                 <p className="muted small" style={{ margin: "16px 0 8px" }}>כבר יש לך מפתח ממכשיר אחר?</p>
                 <form className="input-row" onSubmit={(event) => { event.preventDefault(); setKeyError(!restoreRecoveryKey(importKey)); }}>
                   <input className="field" value={importKey} onChange={(event) => setImportKey(event.target.value)} placeholder="הדבק מפתח שחזור" aria-label="מפתח שחזור ממכשיר אחר" />
@@ -314,6 +342,7 @@ export default function Home() {
 
       </div>
       </>}
+      {blockedPartyHref && <SaveNavigationWarning destination={blockedPartyHref} retry={retry} waitForSave={waitForSave} onClose={() => setBlockedPartyHref("")} />}
     </main>
   );
 }
