@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const description = party.tldr;
   return {
     title, description,
-    openGraph: { title, description, type: "article", url: `https://voteroom.ripper234.chatgpt.site/party/${party.slug}` },
+    openGraph: { title, description, type: "article" },
     twitter: { card: "summary", title, description },
   };
 }
