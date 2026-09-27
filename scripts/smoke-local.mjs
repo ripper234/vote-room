@@ -126,6 +126,13 @@ try {
   assert.equal(party.response.status, 200);
   assert.match(party.result, /youtube-nocookie\.com/);
   assert.match(party.result, /הטיעון החזק נגד/);
+  assert.match(party.result, /פוסטים נבחרים/);
+  assert.match(party.result, /naftalibennett\/status\/2048485392865755469/);
+  for (const [slug, statusId] of [["utj", "1773427743604031865"], ["amcha", "2092278960021274918"]]) {
+    const anotherParty = await request(`/party/${slug}`);
+    assert.equal(anotherParty.response.status, 200);
+    assert.match(anotherParty.result, new RegExp(statusId));
+  }
 
   const signIn = await request("/signin-with-chatgpt?return_to=%2Fmap");
   assert.equal(signIn.response.status, 302);
@@ -170,7 +177,7 @@ try {
   const guestAgain = await request("/api/decision", { guestKey: key });
   assert.equal(guestAgain.result.account, null);
   assert.equal(guestAgain.result.state.orientation, "explore");
-  console.log("Local smoke passed: save, validation, export, party page, mock login, account conflict, delete, sign-out.");
+  console.log("Local smoke passed: save, validation, export, party post walls, mock login, account conflict, delete, sign-out.");
 } catch (error) {
   console.error(error);
   console.error(log.slice(-4000));

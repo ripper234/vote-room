@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { coalitionChoices, netanyahuChoices, type Party, type PartyVideo, type PublicVoice } from "@/lib/parties";
 import { fairReadings } from "@/lib/fair-readings";
 import { SaveIndicator, SaveNavigationWarning, useDecision } from "@/lib/use-decision";
+import { partyPosts } from "@/lib/party-posts";
+import { PartyPostWall } from "@/components/party-post-wall";
 
 const statuses = [
   { value: "open", label: "פתוח לבדיקה" },
@@ -197,6 +199,7 @@ export default function PartyDetail({ party }: { party: Party }) {
           )}
         </div>
       </section>
+      <PartyPostWall posts={partyPosts[party.slug] ?? []} partyName={party.name} partyColor={party.color} />
       <div className="detail-grid">
         <div className="section-stack detail-primary">
           <section className="panel">

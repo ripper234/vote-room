@@ -130,6 +130,33 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .detail-more { grid-area: more; }
 .share-from-detail { margin-top: 16px; white-space: normal; }
 .brief-panel { margin-bottom: 20px; }
+.post-wall { margin-bottom: 20px; overflow: hidden; border-top: 5px solid var(--party-accent); }
+.post-wall-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 20px 24px 14px; }
+.post-wall-kicker { color: #3153c4; font-size: .84rem; font-weight: 800; }
+.post-wall h2 { margin: 4px 0 6px; font-size: clamp(1.35rem,2.3vw,1.8rem); }
+.post-wall-heading p { margin: 0; color: #52647d; font-size: .9rem; line-height: 1.45; }
+.post-wall-controls { display: flex; align-items: center; gap: 9px; flex: none; color: #52647d; font-size: .85rem; }
+.post-wall-controls button { width: 42px; height: 42px; border: 1px solid #cbd8e9; border-radius: 50%; background: #fff; color: #2444a4; font-size: 1.2rem; cursor: pointer; }
+.post-wall-controls button:hover:not(:disabled) { background: #eaf0fb; }
+.post-wall-controls button:disabled { opacity: .38; cursor: default; }
+.post-track { display: flex; gap: 14px; padding: 5px 24px 18px; overflow-x: auto; overscroll-behavior-inline: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 24px; scrollbar-color: #a9b9d4 #edf2fa; }
+.post-track:focus-visible { outline: 3px solid #91a8f7; outline-offset: -3px; }
+.post-card { box-sizing: border-box; flex: 0 0 min(360px, calc(100vw - 76px)); min-height: 270px; scroll-snap-align: start; padding: 18px; border: 1px solid #d5dfed; border-radius: 13px; background: #f8fbff; display: flex; flex-direction: column; }
+.post-card-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; color: #62738d; font-size: .82rem; }
+.post-author { color: #14264b; font-weight: 800; font-size: .96rem; }
+.post-summary { color: #172a4a; font-size: 1rem; font-weight: 700; line-height: 1.5; margin: 22px 0 12px; }
+.post-reason { margin: 0; color: #52647d; line-height: 1.5; font-size: .88rem; }
+.post-reason strong { color: #314866; }
+.post-context { margin: 10px 0 0; color: #735d30; line-height: 1.45; font-size: .82rem; }
+.post-actions { display: flex; flex-wrap: wrap; gap: 9px 14px; align-items: center; margin-top: auto; padding-top: 19px; font-size: .88rem; font-weight: 700; }
+.post-actions a { color: #2444a4; text-underline-offset: 3px; }
+.post-actions button { border: 0; padding: 5px 0; background: transparent; color: #52647d; text-decoration: underline; text-underline-offset: 3px; font: inherit; cursor: pointer; }
+.post-actions button:disabled { cursor: wait; }
+.post-actions button:focus-visible, .post-wall-controls button:focus-visible { outline: 3px solid #91a8f7; outline-offset: 3px; }
+.post-embed { min-width: 0; }
+.post-embed.shown { margin-top: 12px; }
+.post-embed-error { margin: 8px 0 0; color: #795a0d; font-size: .82rem; }
+.post-wall-hint, .post-wall-empty { margin: 0; padding: 0 24px 18px; color: #52647d; font-size: .84rem; line-height: 1.5; }
 .brief-lead { font-size: 1.14rem; font-weight: 700; line-height: 1.55; margin-bottom: 18px; max-width: 900px; }
 .election-status { border: 1px solid #d3b763; background: #fff8dd; border-radius: 10px; padding: 11px 14px; line-height: 1.55; font-size: .9rem; }
 .party-status-note { display: block; color: #795a0d; font-size: .83rem; font-weight: 700; margin: 7px 0; }
@@ -272,6 +299,11 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
   .input-row { flex-wrap: wrap; }
   .input-row .field { flex: 1 1 180px; }
   .detail-hero { margin-top: 18px; padding: 23px 20px; }
+  .post-wall-heading { align-items: start; flex-direction: column; gap: 12px; padding: 18px 18px 12px; }
+  .post-wall-controls { align-self: flex-end; }
+  .post-track { padding-inline: 18px; scroll-padding-inline: 18px; }
+  .post-card { flex-basis: min(320px, calc(100vw - 74px)); }
+  .post-wall-hint, .post-wall-empty { padding-inline: 18px; }
   .roadmap-item { grid-template-columns: 1fr; gap: 4px; }
   .welcome-page { padding-top: 12px; }
   .welcome-hero { padding: 26px 22px; }
