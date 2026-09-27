@@ -20,7 +20,7 @@ export default function Roadmap() {
         </div>
         <div className="roadmap-item">
           <strong>בהמשך</strong>
-          <div><h2>חשבון בלי ChatGPT</h2><p>כניסה פשוטה בדרך נוספת, לצד ייצוא ומחיקה של המידע שלך. אפשרות האורח תישאר.</p></div>
+          <div><h2>חשבון בלי ChatGPT</h2><p>כניסה פשוטה בדרך נוספת. אפשרות האורח תישאר.</p></div>
         </div>
       </div>
     </main>

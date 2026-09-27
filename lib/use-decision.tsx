@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { coalitionChoices, emptyDecision, netanyahuChoices, orientationChoices, parties, priorityOptions, type DecisionState } from "./parties";
+import { KEY_STORAGE, PREVIOUS_KEY_STORAGE, SESSION_CLEAR_STORAGE } from "./decision-key";
 
 type SaveState = "loading" | "saved" | "saving" | "error";
 type Pending = {
@@ -10,8 +11,7 @@ type Pending = {
   kind: string;
   resolve?: (saved: boolean) => void;
 };
-const KEY_STORAGE = "bechira-recovery-key-v1";
-const PREVIOUS_KEY_STORAGE = "vote-room-previous-recovery-key-v1";
+type GuestConflict = { revision: number; state: DecisionState };
 
 function getOrCreateKey(): string {
   const existing = window.localStorage.getItem(KEY_STORAGE);
@@ -28,6 +28,8 @@ export function useDecision() {
   const [recoveryKey, setRecoveryKey] = useState<string | null>(null);
   const [previousRecoveryKey, setPreviousRecoveryKey] = useState<string | null>(null);
   const [account, setAccount] = useState<{ email: string } | null>(null);
+  const [guestConflict, setGuestConflict] = useState<GuestConflict | null>(null);
+  const [guestConflictDismissed, setGuestConflictDismissed] = useState(false);
   const keyRef = useRef("");
   const revision = useRef(0);
   const current = useRef<DecisionState>(emptyDecision);
@@ -43,13 +45,13 @@ export function useDecision() {
       setRecoveryKey(keyRef.current);
       setPreviousRecoveryKey(window.localStorage.getItem(PREVIOUS_KEY_STORAGE));
     } catch {
-      setSaveState("error");
-      return () => { live = false; };
+      // Signed-in maps work even when browser storage is unavailable.
+      keyRef.current = "";
     }
-    fetch("/api/decision", { cache: "no-store", headers: { "x-decision-key": keyRef.current } })
+    fetch("/api/decision", { cache: "no-store", headers: keyRef.current ? { "x-decision-key": keyRef.current } : {} })
       .then(async (response) => {
         if (!response.ok) throw new Error("storage");
-        return response.json() as Promise<{ revision: number; state: DecisionState; account: { email: string } | null }>;
+        return response.json() as Promise<{ revision: number; state: DecisionState; account: { email: string } | null; guestConflict: GuestConflict | null }>;
       })
       .then((data) => {
         if (!live) return;
@@ -57,12 +59,36 @@ export function useDecision() {
         current.current = { ...emptyDecision, ...data.state };
         setState(current.current);
         setAccount(data.account);
+        const choice = (() => { try { return window.sessionStorage.getItem("vote-room-guest-choice-v1"); } catch { return null; } })();
+        setGuestConflict(data.guestConflict);
+        setGuestConflictDismissed(choice === `${keyRef.current}:${data.guestConflict?.revision}`);
         setSaveState("saved");
       })
       .catch(() => {
         if (live) setSaveState("error");
       });
     return () => { live = false; };
+  }, []);
+
+  useEffect(() => {
+    const refresh = (event: PageTransitionEvent) => { if (event.persisted) window.location.reload(); };
+    const clearOtherTab = (event: StorageEvent) => {
+      if (event.key === SESSION_CLEAR_STORAGE) window.location.replace("/");
+    };
+    window.addEventListener("pageshow", refresh);
+    window.addEventListener("storage", clearOtherTab);
+    return () => {
+      window.removeEventListener("pageshow", refresh);
+      window.removeEventListener("storage", clearOtherTab);
+    };
+  }, []);
+
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (queue.current.length || busy.current || errored.current) { event.preventDefault(); event.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
   }, []);
 
   const drain = useCallback(async () => {
@@ -75,14 +101,14 @@ export function useDecision() {
       try {
         const response = await fetch("/api/decision", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "x-decision-key": keyRef.current },
+          headers: { "Content-Type": "application/json", ...(keyRef.current ? { "x-decision-key": keyRef.current } : {}) },
           body: JSON.stringify({ ...item, expectedRevision: revision.current }),
           keepalive: true,
         });
         if (response.status === 409) {
           if (++conflicts > 5) throw new Error("too_many_conflicts");
           const latestResponse = await fetch("/api/decision", {
-            cache: "no-store", headers: { "x-decision-key": keyRef.current },
+            cache: "no-store", headers: keyRef.current ? { "x-decision-key": keyRef.current } : {},
           });
           if (!latestResponse.ok) throw new Error("storage");
           const latest = await latestResponse.json() as { revision: number; state: DecisionState };
@@ -132,10 +158,17 @@ export function useDecision() {
     });
   }, [drain]);
 
-  const waitForSave = useCallback((): Promise<boolean> => {
+  const waitForSave = useCallback((timeoutMs = 8000): Promise<boolean> => {
     if (errored.current) return Promise.resolve(false);
     if (!queue.current.length && !busy.current) return Promise.resolve(true);
-    return new Promise((resolve) => waiters.current.push(resolve));
+    return new Promise((resolve) => {
+      const done = (saved: boolean) => { window.clearTimeout(timer); resolve(saved); };
+      const timer = window.setTimeout(() => {
+        waiters.current = waiters.current.filter((waiter) => waiter !== done);
+        resolve(false);
+      }, timeoutMs);
+      waiters.current.push(done);
+    });
   }, []);
 
   const retry = useCallback(() => {
@@ -145,10 +178,12 @@ export function useDecision() {
     void drain();
   }, [drain]);
 
-  const restoreRecoveryKey = useCallback((key: string): boolean => {
+  const restoreRecoveryKey = useCallback(async (key: string): Promise<boolean> => {
     const clean = key.trim().toLowerCase();
     if (!/^[a-f0-9]{64}$/.test(clean)) return false;
     try {
+      const result = await fetch("/api/decision?scope=guest", { cache: "no-store", headers: { "x-decision-key": clean } });
+      if (!result.ok || (await result.json() as { revision: number }).revision === 0) return false;
       const existing = window.localStorage.getItem(KEY_STORAGE);
       if (existing && existing !== clean) {
         window.localStorage.setItem(PREVIOUS_KEY_STORAGE, existing);
@@ -161,8 +196,25 @@ export function useDecision() {
   }, []);
 
   const restorePreviousKey = useCallback(() => {
-    if (previousRecoveryKey) restoreRecoveryKey(previousRecoveryKey);
+    if (previousRecoveryKey) void restoreRecoveryKey(previousRecoveryKey);
   }, [previousRecoveryKey, restoreRecoveryKey]);
+
+  const dismissGuestConflict = useCallback(() => {
+    try { window.sessionStorage.setItem("vote-room-guest-choice-v1", `${keyRef.current}:${guestConflict?.revision}`); } catch {}
+    setGuestConflictDismissed(true);
+  }, [guestConflict]);
+
+  const reopenGuestConflict = useCallback(() => {
+    try { window.sessionStorage.removeItem("vote-room-guest-choice-v1"); } catch {}
+    setGuestConflictDismissed(false);
+  }, []);
+
+  const replaceFromGuest = useCallback(async () => {
+    if (!guestConflict) return false;
+    const saved = await update(() => guestConflict.state, "guest_replace");
+    if (saved) { setGuestConflict(null); dismissGuestConflict(); }
+    return saved;
+  }, [guestConflict, update, dismissGuestConflict]);
 
   useEffect(() => {
     if (!state) return;
@@ -248,7 +300,7 @@ export function useDecision() {
     return () => lifecycle.abort();
   }, [state, update]);
 
-  return { state, saveState, update, retry, waitForSave, recoveryKey, previousRecoveryKey, restoreRecoveryKey, restorePreviousKey, account };
+  return { state, saveState, update, retry, waitForSave, recoveryKey, previousRecoveryKey, restoreRecoveryKey, restorePreviousKey, account, guestConflict, guestConflictDismissed, dismissGuestConflict, reopenGuestConflict, replaceFromGuest };
 }
 
 const priorityOptionsSet = new Set(priorityOptions);

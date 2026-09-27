@@ -1,5 +1,6 @@
-import { readDecision, writeDecision } from "../../../db/decision";
-import { coalitionChoices, netanyahuChoices, orientationChoices, parties, type DecisionState } from "../../../lib/parties";
+import { deleteDecisions, lastImportedGuestState, readDecision, writeDecision } from "../../../db/decision";
+import { anonymousUserId, signedInUser } from "../../../lib/decision-identity";
+import { coalitionChoices, netanyahuChoices, orientationChoices, parties, priorityOptions, type DecisionState } from "../../../lib/parties";
 
 const noStore = { "Cache-Control": "no-store" };
 const allowedSlugs = new Set(parties.map((party) => party.slug));
@@ -8,23 +9,40 @@ const allowedAssessment = new Set(["aligned", "unclear", "misaligned"]);
 const allowedCoalition = new Set(["", ...coalitionChoices.map((choice) => choice.value)]);
 const allowedNetanyahu = new Set(["", ...netanyahuChoices.map((choice) => choice.value)]);
 const allowedOrientation = new Set(["", ...orientationChoices.map((choice) => choice.value)]);
+const stateFields = new Set(["orientation", "priorities", "customTags", "arabCoalition", "netanyahuCoalition", "partyStatus", "issueAssessments", "partyNotes", "generalNotes", "includeLieberman"]);
+const MAX_BODY_BYTES = 150_000;
 
-async function anonymousUserId(request: Request): Promise<string | null> {
-  const key = request.headers.get("x-decision-key");
-  if (!key || !/^[a-f0-9]{64}$/.test(key)) return null;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
-  return "anon:" + Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+function sameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  return (!origin || origin === new URL(request.url).origin) && request.headers.get("sec-fetch-site") !== "cross-site";
 }
 
-function signedInUser(request: Request): { id: string; email: string } | null {
-  // These identity headers are supplied by Sites after Sign in with ChatGPT.
-  const id = request.headers.get("oai-authenticated-user-id");
-  const email = request.headers.get("oai-authenticated-user-email");
-  return id && email ? { id: `chatgpt:${id}`, email } : null;
+async function boundedJson(request: Request): Promise<unknown> {
+  const advertised = Number(request.headers.get("content-length") ?? 0);
+  if (advertised > MAX_BODY_BYTES) throw new Error("too_large");
+  const reader = request.body?.getReader();
+  if (!reader) throw new Error("invalid_json");
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_BODY_BYTES) {
+      await reader.cancel();
+      throw new Error("too_large");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return JSON.parse(new TextDecoder().decode(bytes));
 }
 
 function validState(input: unknown): input is DecisionState {
-  if (!input || typeof input !== "object") return false;
+  if (!input || typeof input !== "object" || Array.isArray(input) ||
+      Object.keys(input).length !== stateFields.size || Object.keys(input).some((field) => !stateFields.has(field))) return false;
   const state = input as Partial<DecisionState>;
   const stringList = (value: unknown, max: number) =>
     Array.isArray(value) && value.length <= max &&
@@ -45,6 +63,7 @@ function validState(input: unknown): input is DecisionState {
     Object.entries(state.issueAssessments).every(([slug, ratings]) =>
       allowedSlugs.has(slug) && !!ratings && typeof ratings === "object" && !Array.isArray(ratings) &&
       Object.entries(ratings).length <= 30 &&
+      Object.keys(ratings).every((tag) => priorityOptionsSet.has(tag) || state.customTags?.includes(tag)) &&
       Object.entries(ratings).every(([tag, value]) => tag.length > 0 && tag.length <= 80 &&
         typeof value === "string" && allowedAssessment.has(value))
     ) &&
@@ -53,14 +72,18 @@ function validState(input: unknown): input is DecisionState {
     typeof state.includeLieberman === "boolean";
 }
 
+const priorityOptionsSet = new Set(priorityOptions);
+
 export async function GET(request: Request) {
-  const account = signedInUser(request);
+  const guestOnly = new URL(request.url).searchParams.get("scope") === "guest";
+  const account = guestOnly ? null : signedInUser(request);
   const anonymousId = await anonymousUserId(request);
   const userId = account?.id ?? anonymousId;
   if (!userId) return Response.json({ error: "invalid_device_key" }, { status: 400, headers: noStore });
   try {
     let decision = await readDecision(userId);
     let imported = false;
+    let guestConflict: { revision: number; state: DecisionState } | null = null;
     // A first sign-in adopts the visitor's existing device map. A returning
     // account always wins; its history is never replaced by a device copy.
     if (account && decision.revision === 0 && anonymousId) {
@@ -71,7 +94,16 @@ export async function GET(request: Request) {
         imported = !!result;
       }
     }
-    return Response.json({ ...decision, account: account ? { email: account.email } : null, imported }, { headers: noStore });
+    if (account && decision.revision > 0 && anonymousId) {
+      const guest = await readDecision(anonymousId);
+      if (guest.revision > 0 && JSON.stringify(guest.state) !== JSON.stringify(decision.state)) {
+        const importedState = await lastImportedGuestState(account.id);
+        if (JSON.stringify(importedState) !== JSON.stringify(guest.state)) {
+          guestConflict = { revision: guest.revision, state: guest.state };
+        }
+      }
+    }
+    return Response.json({ ...decision, account: account ? { email: account.email } : null, imported, guestConflict }, { headers: noStore });
   } catch (error) {
     console.error("decision read failed", error);
     return Response.json({ error: "temporary_storage_error" }, { status: 503, headers: noStore });
@@ -81,15 +113,14 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const userId = signedInUser(request)?.id ?? await anonymousUserId(request);
   if (!userId) return Response.json({ error: "invalid_device_key" }, { status: 400, headers: noStore });
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) {
+  if (!sameOrigin(request)) {
     return Response.json({ error: "invalid_origin" }, { status: 403, headers: noStore });
   }
   let payload: unknown;
   try {
-    payload = await request.json();
-  } catch {
-    return Response.json({ error: "invalid_json" }, { status: 400, headers: noStore });
+    payload = await boundedJson(request);
+  } catch (error) {
+    return Response.json({ error: error instanceof Error && error.message === "too_large" ? "too_large" : "invalid_json" }, { status: error instanceof Error && error.message === "too_large" ? 413 : 400, headers: noStore });
   }
   if (!payload || typeof payload !== "object") {
     return Response.json({ error: "invalid_payload" }, { status: 400, headers: noStore });
@@ -105,6 +136,22 @@ export async function POST(request: Request) {
     return Response.json(saved, { headers: noStore });
   } catch (error) {
     console.error("decision write failed", error);
+    return Response.json({ error: "temporary_storage_error" }, { status: 503, headers: noStore });
+  }
+}
+
+export async function DELETE(request: Request) {
+  if (!sameOrigin(request)) return Response.json({ error: "invalid_origin" }, { status: 403, headers: noStore });
+  const account = signedInUser(request);
+  const anonymousId = await anonymousUserId(request);
+  if (!account && !anonymousId) return Response.json({ error: "invalid_device_key" }, { status: 400, headers: noStore });
+  try {
+    const payload = await boundedJson(request) as { confirm?: string };
+    if (payload?.confirm !== "delete_my_decisions") return Response.json({ error: "confirmation_required" }, { status: 400, headers: noStore });
+    await deleteDecisions([account?.id, anonymousId].filter((id): id is string => Boolean(id)));
+    return Response.json({ deleted: true }, { headers: noStore });
+  } catch (error) {
+    console.error("decision delete failed", error);
     return Response.json({ error: "temporary_storage_error" }, { status: 503, headers: noStore });
   }
 }

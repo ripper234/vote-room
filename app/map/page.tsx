@@ -16,7 +16,7 @@ const statusLabels: Record<string, string> = {
 const starterPriorities = ["משילות ושירות ציבורי", "כלכלה ויוקר המחיה", "דמוקרטיה וחוקה"];
 
 export default function Home() {
-  const { state, saveState, update, retry, waitForSave, recoveryKey, previousRecoveryKey, restoreRecoveryKey, restorePreviousKey, account } = useDecision();
+  const { state, saveState, update, retry, waitForSave, recoveryKey, previousRecoveryKey, restoreRecoveryKey, restorePreviousKey, account, guestConflict, guestConflictDismissed, dismissGuestConflict, reopenGuestConflict, replaceFromGuest } = useDecision();
   const [custom, setCustom] = useState("");
   const [generalDraft, setGeneralDraft] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -25,7 +25,11 @@ export default function Home() {
   const [tagError, setTagError] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
   const [blockedPartyHref, setBlockedPartyHref] = useState("");
+  const [navigatingHref, setNavigatingHref] = useState("");
+  const [conflictMessage, setConflictMessage] = useState("");
+  const [justChosePath, setJustChosePath] = useState(false);
   const selected = state?.priorities ?? [];
+  const uncoveredSelected = selected.filter((tag) => !parties.some((party) => party.highlights.some((item) => item.topic === tag)));
   const firstPriorities = priorityOptions.filter((label) => starterPriorities.includes(label));
   const morePriorities = priorityOptions.filter((label) => !starterPriorities.includes(label));
   const pathParties = showAll || state?.orientation === "explore"
@@ -42,7 +46,7 @@ export default function Home() {
     if (marked.length < 2) return "";
     const score = Math.round(marked.reduce((sum, tag) =>
       sum + (ratings[tag] === "aligned" ? 100 : ratings[tag] === "unclear" ? 50 : 0), 0) / marked.length);
-    return `ההערכה שלי: ${score}/100 · דירגתי ${marked.length} מתוך ${selected.length} נושאים`;
+    return `הדירוג העצמי שלי: ${score}/100 · לפי ${marked.length} מתוך ${selected.length} נושאים שסימנתי`;
   };
   const sortedVisible = [...visible].sort((a, b) => rank(a.slug) - rank(b.slug));
   const hasVotes = sortedVisible.some((party) => rank(party.slug) !== 1);
@@ -54,6 +58,22 @@ export default function Home() {
     const timer = window.setTimeout(() => saveThought(generalDraft), 650);
     return () => window.clearTimeout(timer);
   }, [generalDraft, state?.generalNotes, update]);
+
+  useEffect(() => {
+    if (!justChosePath || !state?.orientation) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById("parties-title")?.focus();
+      setJustChosePath(false);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [justChosePath, state?.orientation]);
+
+  useEffect(() => {
+    if (generalDraft === null || generalDraft === state?.generalNotes) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [generalDraft, state?.generalNotes]);
 
   function saveThought(value: string) {
     if (!state || value === state.generalNotes) return;
@@ -75,8 +95,29 @@ export default function Home() {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     const href = event.currentTarget.href;
+    if (generalDraft !== null) saveThought(generalDraft);
+    setNavigatingHref(href);
     if (await waitForSave()) window.location.assign(href);
-    else setBlockedPartyHref(href);
+    else { setNavigatingHref(""); setBlockedPartyHref(href); }
+  }
+
+  async function importGuestMap() {
+    if (!window.confirm("להציג מעכשיו את מפת האורח במקום המפה הנוכחית בחשבון? ההיסטוריה הקודמת בחשבון תישמר בקובץ הייצוא.")) return;
+    setConflictMessage("מעביר את מפת האורח…");
+    setConflictMessage(await replaceFromGuest() ? "מפת האורח הועברה לחשבון." : "לא הצלחנו להעביר. אפשר לנסות שוב.");
+  }
+
+  async function downloadGuestMap() {
+    if (!recoveryKey) return;
+    try {
+      const response = await fetch("/api/decision/export?scope=guest", { cache: "no-store", headers: { "x-decision-key": recoveryKey } });
+      if (!response.ok) throw new Error();
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = url; link.download = "vote-room-guest-data.json"; link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+      setConflictMessage("מפת האורח וההיסטוריה שלה הורדו.");
+    } catch { setConflictMessage("ההורדה נכשלה. נסה שוב."); }
   }
 
   function togglePriority(label: string, checked: boolean) {
@@ -142,6 +183,17 @@ export default function Home() {
         </div>
         <span className="date-stamp">מידע על הרשימות: 26.9.2026</span>
       </div>
+      {guestConflict && !guestConflictDismissed && <section className="panel panel-body guest-conflict" role="status">
+        <h2>יש כאן שתי מפות בחירה</h2>
+        <p>מוצגת מפת החשבון. בדפדפן הזה שמורה גם מפת אורח שונה. בחר איזו מפה תמשיך איתך; שום מידע לא יוחלף בלי בחירה שלך.</p>
+        <div className="guest-conflict-actions">
+          <button type="button" className="button" onClick={dismissGuestConflict}>המשך עם מפת החשבון</button>
+          <button type="button" className="button secondary" onClick={importGuestMap}>השתמש במפת האורח בחשבון</button>
+          <button type="button" className="button secondary" onClick={downloadGuestMap}>הורד גיבוי של מפת האורח</button>
+        </div>
+        <p className="muted small">אם תמשיך בחשבון, מפת האורח תישאר נפרדת עד שתמחק אותה או תעביר אותה. התנתקות מנקה את מפתח האורח מהמכשיר הזה.</p>
+      </section>}
+      {conflictMessage && <p role="status" className="form-feedback">{conflictMessage}</p>}
       {!state ? saveState === "error" ? (
         <section className="panel panel-body load-error" role="alert">
           <h2>לא הצלחנו לטעון את המפה</h2>
@@ -158,7 +210,7 @@ export default function Home() {
           <div className="orientation-options">
             {orientationChoices.map((choice) => (
               <button key={choice.value} type="button" className="orientation-card"
-                onClick={() => update((previous) => ({ ...previous, orientation: choice.value }), "orientation")}>
+                onClick={() => { setJustChosePath(true); update((previous) => ({ ...previous, orientation: choice.value }), "orientation"); }}>
                 <strong>{choice.title}</strong><span>{choice.subtitle}</span><b aria-hidden="true">←</b>
               </button>
             ))}
@@ -168,20 +220,23 @@ export default function Home() {
       ) : <>
       <div className="path-bar">
         <strong>{routeLabel}</strong>
+        {guestConflict && guestConflictDismissed && <button type="button" className="button secondary" onClick={reopenGuestConflict}>יש גם מפת אורח בדפדפן הזה</button>}
         <button type="button" className="button secondary" onClick={() => { setShowAll(false); update((previous) => ({ ...previous, orientation: "" }), "orientation"); }}>שנה נקודת פתיחה</button>
       </div>
       <div className="workspace-grid">
         <div className="section-stack">
           <section className="panel" id="results" aria-labelledby="parties-title">
             <div className="panel-header">
-              <h2 id="parties-title">רשימות לבדיקה</h2>
+              <h2 id="parties-title" tabIndex={-1}>רשימות לבדיקה</h2>
               <span className="result-header-meta"><span className="muted small">{visible.length} רשימות</span><SaveIndicator status={saveState === "error" ? "error" : generalDraft !== null && generalDraft !== state.generalNotes ? "saving" : saveState} retry={retry} /></span>
             </div>
             <div className="result-intro">
               <span>{selected.length ? `חשוב לי: ${selected.join(" · ")}` : "אפשר לפתוח רשימה מיד. אפשר גם לבחור נושאים חשובים לך."}</span>
               <a href="#my-compass" className="button secondary">בחר נושאים ↓</a>
               {state.generalNotes && <p className="muted small"><strong>המחשבה שלי:</strong> {state.generalNotes}</p>}
-              <details className="score-explainer"><summary>איך מחושב הציון האישי?</summary><small>הציון מבוסס רק על הדירוג שלך בדפי הרשימות, אחרי שסימנת לפחות שני נושאים: תואם 100, לא ברור 50, לא תואם 0. הוא אינו המלצת הצבעה.</small></details>
+              {uncoveredSelected.length > 0 && <p className="muted small"><strong>פער בכיסוי שלנו:</strong> אין עדיין סיכומים מבוססי מקור עבור {uncoveredSelected.join(" · ")}. אפשר לשמור את הנושאים האלה ולדרג בעצמך.</p>}
+              <details className="score-explainer"><summary>איך נבחרו הרשימות?</summary><small>המפה כוללת כרגע 14 רשימות מתוך אלה שהוגשו, מחולקות לנקודות פתיחה לפי עמדות קואליציוניות ידועות. זו חלוקה מערכתית זמנית, ולא רשימה מלאה או ניבוי של הרכב הממשלה. <a href="https://www.knesset.tv/main-articles/61384/94592/" target="_blank" rel="noopener noreferrer">לכל הרשימות שהוגשו ↗</a></small></details>
+              <details className="score-explainer"><summary>מהו הדירוג העצמי?</summary><small>זהו ממוצע של ההערכות שסימנת בעצמך בדפי הרשימות, אחרי שני נושאים לפחות: תואם 100, לא ברור 50, לא תואם 0. האתר לא בדק עבורך את ההתאמה ולא ממליץ למי להצביע.</small></details>
             </div>
             <div className="party-list">
               {sortedVisible.map((party, index) => (
@@ -198,14 +253,14 @@ export default function Home() {
                 )}
                 <div className="party-card" data-reaction={rank(party.slug) === 0 ? "like" : rank(party.slug) === 2 ? "dislike" : undefined} style={{ "--party-accent": party.color } as React.CSSProperties}>
                   <span className="party-band" aria-hidden="true" />
-                  <a className="party-card-link" href={`/party/${party.slug}`} onClick={openParty}>
+                  <a className="party-card-link" href={`/party/${party.slug}`} onClick={openParty} aria-busy={navigatingHref.endsWith(`/party/${party.slug}`)}>
                     <div className="party-card-main">
                       <h3>{party.name}</h3>
                       <p>{party.leaders}</p>
                       {party.electionStatus && <span className="party-status-note">ההתמודדות תלויה בהכרעת העליון · פירוט בדף הרשימה</span>}
                       <div className="personal-result">
                         <span>{party.tldr}</span>
-                        {party.highlights.find((item) => selected.includes(item.topic)) && <span className="matched-highlight">לפי הנושאים שלך: {party.highlights.find((item) => selected.includes(item.topic))!.text}</span>}
+                        {selected.map((topic) => party.highlights.find((item) => item.topic === topic)).find(Boolean) && <span className="matched-highlight">לפי הנושאים שלך: {selected.map((topic) => party.highlights.find((item) => item.topic === topic)).find(Boolean)!.text}</span>}
                         {gradeFor(party.slug) && <strong>{gradeFor(party.slug)}</strong>}
                       </div>
                       {(state.partyStatus[party.slug] || state.priorities.length > 0 || (hasVotes && (showAll || state.orientation === "explore"))) && <div className="meta">
@@ -216,7 +271,7 @@ export default function Home() {
                         ].filter(Boolean).join(" · ")}
                       </div>}
                     </div>
-                    <span className="card-action">לדף הרשימה <span aria-hidden="true">←</span></span>
+                    <span className="card-action" aria-live="polite">{navigatingHref.endsWith(`/party/${party.slug}`) ? "שומר ופותח…" : "לדף הרשימה"} <span aria-hidden="true">←</span></span>
                   </a>
                   <div className="party-votes" role="group" aria-label={`סימון ${party.name}`}>
                     <button type="button" className="vote-button" aria-label={`${party.name}: מתאים לי`} aria-pressed={state.partyStatus[party.slug] === "positive"} onClick={() => togglePartyVote(party.slug, "positive")}>
@@ -245,7 +300,7 @@ export default function Home() {
             </button>
           )}
           <div className="notice" style={{ background: "#fff", borderStyle: "dashed" }}>
-            זו לא רשימת כל המתמודדים. ההרכב הסופי עשוי להשתנות.{" "}
+            זו לא רשימת כל המתמודדים. אנחנו מוסיפים סיכומים כשיש מקור ברור; היעדר סיכום הוא פער בכיסוי שלנו, לא הוכחה שאין לרשימה עמדה. ההרכב הסופי עשוי להשתנות.{" "}
             <a href="https://www.knesset.tv/main-articles/61384/94592/" target="_blank" rel="noopener noreferrer">לכל הרשימות שהוגשו ↗</a>
           </div>
         </div>
@@ -273,6 +328,7 @@ export default function Home() {
               <details className="compass-more">
                 <summary>עוד נושאים ושאלות (לא חובה){morePriorities.filter((label) => selected.includes(label)).length ? ` · ${morePriorities.filter((label) => selected.includes(label)).length} מסומנים` : ""}</summary>
                 <p className="muted small">אפשר לבחור נושאים נוספים או לשמור מחשבות. תשובות על שותפות קואליציונית נשמרות אצלך, ולא משנות כרגע את הציון.</p>
+                <p className="muted small">יושרה ואמון ויכולת להרכיב ממשלה נשמרים כרגע כנושאים למחשבה; עדיין אין לנו סיכומי מקור לרשימות בנושאים האלה.</p>
                 <div className="tags" aria-label="נושאים נוספים">{morePriorities.map(priorityTag)}</div>
               <form className="input-row" style={{ marginTop: 14 }} onSubmit={addTag}>
                 <label className="sr-only" htmlFor="custom-topic">נושא נוסף שחשוב לי</label>
@@ -332,11 +388,11 @@ export default function Home() {
                 </div>
                 {copyStatus && <p className="form-feedback" role="status">{copyStatus}</p>}
                 <p className="muted small" style={{ margin: "16px 0 8px" }}>כבר יש לך מפתח ממכשיר אחר?</p>
-                <form className="input-row" onSubmit={(event) => { event.preventDefault(); setKeyError(!restoreRecoveryKey(importKey)); }}>
+                <form className="input-row" onSubmit={async (event) => { event.preventDefault(); setKeyError(!await restoreRecoveryKey(importKey)); }}>
                   <input className="field" value={importKey} onChange={(event) => setImportKey(event.target.value)} placeholder="הדבק מפתח שחזור" aria-label="מפתח שחזור ממכשיר אחר" />
                   <button className="button secondary" type="submit">שחזר</button>
                 </form>
-                {keyError && <p role="alert" style={{ color: "#b42335", marginTop: 8 }}>המפתח צריך להכיל 64 תווים. בדוק שהועתק במלואו.</p>}
+                {keyError && <p role="alert" style={{ color: "#b42335", marginTop: 8 }}>לא מצאנו מפה למפתח הזה. בדוק שהועתק במלואו.</p>}
                 {previousRecoveryKey && <button className="button secondary" style={{ marginTop: 12 }} type="button" onClick={restorePreviousKey}>חזור למפה הקודמת במכשיר הזה</button>}
               </details>}
               </details>

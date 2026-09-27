@@ -10,7 +10,14 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const party = parties.find((item) => item.slug === slug);
-  return { title: party ? `${party.name} | חדר בחירה` : "חדר בחירה" };
+  if (!party) return { title: "חדר בחירה" };
+  const title = `${party.name} | חדר בחירה`;
+  const description = party.tldr;
+  return {
+    title, description,
+    openGraph: { title, description, type: "article", url: `https://voteroom.ripper234.chatgpt.site/party/${party.slug}` },
+    twitter: { card: "summary", title, description },
+  };
 }
 
 export default async function PartyPage({ params }: { params: Promise<{ slug: string }> }) {

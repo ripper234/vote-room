@@ -64,6 +64,7 @@ try {
     if (cookie) headers.cookie = cookie;
     if (body) headers["Content-Type"] = "application/json";
     const payload = body && JSON.stringify(body);
+    if (payload) headers["Content-Length"] = Buffer.byteLength(payload);
     const response = await new Promise((resolve, reject) => {
       const connection = http.request({ hostname: "::1", port, path: route, method, headers }, (incoming) => {
         const chunks = [];
@@ -111,6 +112,15 @@ try {
   assert.equal(saved.result.revision, 1);
   const reloaded = await request("/api/decision", { guestKey: key });
   assert.equal(reloaded.result.state.orientation, "explore");
+  const invalid = await request("/api/decision", {
+    method: "POST", guestKey: key,
+    body: { state: { ...state, unexpected: "must not be stored" }, expectedRevision: 1, kind: "invalid" },
+  });
+  assert.equal(invalid.response.status, 400);
+  const guestExport = await request("/api/decision/export", { guestKey: key });
+  assert.equal(guestExport.response.status, 200);
+  assert.equal(guestExport.result.history.length, 1);
+  assert.equal(guestExport.result.history[0].state.orientation, "explore");
 
   const party = await request("/party/yahad");
   assert.equal(party.response.status, 200);
@@ -129,12 +139,38 @@ try {
   const accountPage = await request("/account", { cookie });
   assert.match(accountPage.result, /החשבון שלך מוכן/);
 
+  const secondKey = "b2".repeat(32);
+  const secondGuest = await request("/api/decision", { guestKey: secondKey });
+  const otherState = { ...secondGuest.result.state, orientation: "continue", generalNotes: "A separate guest thought" };
+  const otherSaved = await request("/api/decision", {
+    method: "POST", guestKey: secondKey, body: { state: otherState, expectedRevision: 0, kind: "general_note" },
+  });
+  assert.equal(otherSaved.response.status, 200);
+  const conflict = await request("/api/decision", { guestKey: secondKey, cookie });
+  assert.equal(conflict.result.state.orientation, "explore");
+  assert.equal(conflict.result.guestConflict.state.orientation, "continue");
+  const replaced = await request("/api/decision", {
+    method: "POST", guestKey: secondKey, cookie,
+    body: { state: otherState, expectedRevision: conflict.result.revision, kind: "guest_replace" },
+  });
+  assert.equal(replaced.response.status, 200);
+  const accountExport = await request("/api/decision/export", { guestKey: secondKey, cookie });
+  assert.equal(accountExport.result.history.length, 2);
+  assert.equal(accountExport.result.decision.state.generalNotes, "A separate guest thought");
+  const deleted = await request("/api/decision", {
+    method: "DELETE", guestKey: secondKey, cookie, body: { confirm: "delete_my_decisions" },
+  });
+  assert.equal(deleted.response.status, 200, JSON.stringify(deleted.result));
+  assert.equal((await request("/api/decision", { guestKey: secondKey })).result.revision, 0);
+  assert.equal((await request("/api/decision", { cookie })).result.revision, 0);
+  assert.equal((await request("/api/decision/export", { cookie })).result.history.length, 0);
+
   const signOut = await request("/signout-with-chatgpt?return_to=%2Faccount", { cookie });
   assert.equal(signOut.response.status, 302);
   const guestAgain = await request("/api/decision", { guestKey: key });
   assert.equal(guestAgain.result.account, null);
   assert.equal(guestAgain.result.state.orientation, "explore");
-  console.log("Local smoke passed: guest save, party page, mock login, guest import, sign-out.");
+  console.log("Local smoke passed: save, validation, export, party page, mock login, account conflict, delete, sign-out.");
 } catch (error) {
   console.error(error);
   console.error(log.slice(-4000));

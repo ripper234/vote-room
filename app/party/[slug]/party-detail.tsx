@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Party, PartyVideo, PublicVoice } from "@/lib/parties";
+import { coalitionChoices, netanyahuChoices, type Party, type PartyVideo, type PublicVoice } from "@/lib/parties";
 import { fairReadings } from "@/lib/fair-readings";
 import { SaveIndicator, SaveNavigationWarning, useDecision } from "@/lib/use-decision";
 
@@ -67,6 +67,7 @@ export default function PartyDetail({ party }: { party: Party }) {
   const { state, saveState, update, retry, waitForSave } = useDecision();
   const [draft, setDraft] = useState<string | null>(null);
   const [blockedBack, setBlockedBack] = useState(false);
+  const [goingBack, setGoingBack] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareDraft, setShareDraft] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
@@ -77,6 +78,12 @@ export default function PartyDetail({ party }: { party: Party }) {
     const timer = window.setTimeout(() => saveNote(draft), 650);
     return () => window.clearTimeout(timer);
   }, [draft, note, update, party.slug]);
+  useEffect(() => {
+    if (draft === null || draft === note) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [draft, note]);
   function saveNote(value: string) {
     if (!state || value === note) return;
     void update((previous) => ({ ...previous, partyNotes: { ...previous.partyNotes, [party.slug]: value } }), "party_note");
@@ -85,10 +92,12 @@ export default function PartyDetail({ party }: { party: Party }) {
   async function goBack(event: React.MouseEvent<HTMLAnchorElement>) {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
+    if (draft !== null) saveNote(draft);
+    setGoingBack(true);
     if (await waitForSave()) window.location.assign("/map");
-    else setBlockedBack(true);
+    else { setGoingBack(false); setBlockedBack(true); }
   }
-  const relevant = party.highlights.filter((item) => state?.priorities.includes(item.topic));
+  const relevant = state?.priorities.map((topic) => party.highlights.find((item) => item.topic === topic)).filter((item): item is Party["highlights"][number] => Boolean(item)) ?? [];
   const unfilled = state?.priorities.filter((tag) => !party.highlights.some((item) => item.topic === tag)) ?? [];
   const ratings = state?.issueAssessments?.[party.slug] ?? {};
   const aligned = state?.priorities.filter((tag) => ratings[tag] === "aligned") ?? [];
@@ -98,6 +107,7 @@ export default function PartyDetail({ party }: { party: Party }) {
   const fairReading = fairReadings[party.slug];
   const supportingVoices = party.publicVoices?.filter((voice) => voice.stance === "support") ?? [];
   const opposingVoices = party.publicVoices?.filter((voice) => voice.stance === "against") ?? [];
+  const partnershipSource = party.highlights.find((item) => item.topic === "שותפות עם מפלגות ערביות");
 
   function openShare() {
     const impression = state?.partyStatus[party.slug];
@@ -110,11 +120,20 @@ export default function PartyDetail({ party }: { party: Party }) {
     if (aligned.length) lines.push(`לפי ההתרשמות שלי, יש התאמה ב: ${aligned.join(" · ")}.`);
     if (misaligned.length) lines.push(`יש לי פערים ב: ${misaligned.join(" · ")}.`);
     if (unclear.length) lines.push(`עוד לא ברור לי לגבי: ${unclear.join(" · ")}.`);
+    if (state?.arabCoalition) lines.push(`בשאלת שותפות עם מפלגות ערביות: ${coalitionChoices.find((item) => item.value === state.arabCoalition)?.label}.`);
+    if (state?.netanyahuCoalition) lines.push(`בשאלת ממשלת נתניהו: ${netanyahuChoices.find((item) => item.value === state.netanyahuCoalition)?.label}.`);
     if (!state?.priorities.length) lines.push("אני עדיין מנסה להבין מה מתאים לי ולמה.");
     lines.push(`דף הרשימה והמקורות: ${window.location.origin}/party/${party.slug}`);
     setShareDraft(lines.join("\n\n"));
     setCopyMessage("");
     setShareOpen(true);
+  }
+
+  function addPersonalNoteToShare() {
+    const personalNote = draft ?? note;
+    if (!personalNote.trim()) return;
+    setShareDraft((previous) => `${previous}\n\nהסיבה האישית שלי: ${personalNote.trim()}`);
+    setCopyMessage("ההערה נוספה לטיוטה. אפשר לערוך או למחוק אותה לפני העתקה.");
   }
 
   async function copyShare() {
@@ -132,7 +151,7 @@ export default function PartyDetail({ party }: { party: Party }) {
   return (
     <main className="shell">
       <div className="detail-hero" style={{ "--party-accent": party.color } as React.CSSProperties}>
-        <a href="/map" onClick={goBack} style={{ color: "#c7d8ff", textUnderlineOffset: 4 }}>← חזרה למפה שלי</a>
+        <a href="/map" onClick={goBack} style={{ color: "#c7d8ff", textUnderlineOffset: 4 }}>{goingBack ? "שומר וחוזר…" : "← חזרה למפה שלי"}</a>
         <div className="eyebrow" style={{ marginTop: 22 }}>דף רשימה · מידע עד 26.9.2026</div>
         <h1>{party.name}</h1>
         <p>{party.leaders} · {party.summary}</p>
@@ -142,7 +161,7 @@ export default function PartyDetail({ party }: { party: Party }) {
         <div className="panel-body">
           <p className="brief-lead">{party.tldr}</p>
           {party.electionStatus && <p className="election-status"><strong>מצב ההתמודדות: </strong>{party.electionStatus.text}{" "}<a href={party.electionStatus.url} target="_blank" rel="noopener noreferrer">מקור ↗</a></p>}
-          {state && (state.priorities.length > 0 || Boolean(state.partyNotes[party.slug])) && (
+          {state && (state.priorities.length > 0 || Boolean(state.partyNotes[party.slug]) || state.arabCoalition || state.netanyahuCoalition) && (
             <>
             {state.orientation && state.orientation !== "explore" && state.orientation !== party.bloc && <p className="muted small" style={{ marginTop: -6, lineHeight: 1.5 }}>הרשימה מחוץ למסלול הפתיחה שבחרת, אבל עדיין אפשר לבדוק אותה.</p>}
             <div className="brief-grid">
@@ -157,9 +176,10 @@ export default function PartyDetail({ party }: { party: Party }) {
                     {relevant.length ? <ul className="source-list">
                       {relevant.slice(0, 4).map((item) => <li key={item.topic}><strong>{item.topic}:</strong> {item.text}{" "}
                         <a href={item.url} target="_blank" rel="noopener noreferrer">מקור ↗</a></li>)}
-                    </ul> : <p className="muted small">לא סיכמנו כאן עדיין עמדה בנושאים שבחרת. אפשר לפתוח את המצע ולבדוק.</p>}
+                    </ul> : <p className="muted small">אין לנו עדיין סיכום מבוסס מקור לנושאים האלה. זה פער בכיסוי של האתר, לא קביעה שאין לרשימה עמדה.</p>}
+                    {relevant.length > 4 && <p className="muted small">מוצגים ארבעה מתוך {relevant.length} נושאים שסיכמנו.</p>}
                   </>
-                ) : <p className="muted small">בחר נושאים במפה כדי לראות כאן מידע שרלוונטי לך.</p>}
+                ) : <p className="muted small"><a href="/map#my-compass">בחר נושאים במפה</a> כדי לראות כאן מידע שרלוונטי לך.</p>}
               </div>
               <div>
                 {unfilled.length > 0 && <><span className="field-label">מה חסר</span>
@@ -167,6 +187,12 @@ export default function PartyDetail({ party }: { party: Party }) {
                 {state.partyNotes[party.slug] && <p className="your-note"><strong>המחשבה ששמרת:</strong> {state.partyNotes[party.slug]}</p>}
               </div>
             </div>
+            {(state.arabCoalition || state.netanyahuCoalition) && <div className="coalition-reflection">
+              <strong>שאלות השותפות ששמרת</strong>
+              {state.arabCoalition && <p>{coalitionChoices.find((item) => item.value === state.arabCoalition)?.label}. {partnershipSource ? <><span>{partnershipSource.text}</span> <a href={partnershipSource.url} target="_blank" rel="noopener noreferrer">מקור ↗</a></> : "עדיין אין כאן מקור מסוכם על עמדת הרשימה בנושא."}</p>}
+              {state.netanyahuCoalition && <p>{netanyahuChoices.find((item) => item.value === state.netanyahuCoalition)?.label}. בדוק את תנאי השותפות של הרשימה במקורות שלמטה.</p>}
+              <small>העמדות האלה עוזרות לזכור מה לברר. הן אינן משנות את הדירוג העצמי.</small>
+            </div>}
             </>
           )}
         </div>
@@ -191,6 +217,38 @@ export default function PartyDetail({ party }: { party: Party }) {
               </div>
             </div>
           </section>
+          {state && state.priorities.length > 0 && (
+            <section className="panel">
+              <div className="panel-header"><h2>הנושאים שחשובים לי</h2></div>
+              <div className="panel-body">
+                <p className="muted small">סמן מה נראה לך אחרי שבדקת. אפשר גם לבחור ״עוד לא ברור״.</p>
+                {state.priorities.map((tag, index) => (
+                  <div className="issue-row" key={tag}>
+                    <span className="field-label">{tag}</span>
+                    <RadioGroup
+                      value={state.issueAssessments?.[party.slug]?.[tag] ?? ""}
+                      onValueChange={(value) => update((previous) => ({
+                        ...previous,
+                        issueAssessments: {
+                          ...previous.issueAssessments,
+                          [party.slug]: { ...previous.issueAssessments?.[party.slug], [tag]: value },
+                        },
+                      }), "issue_assessment")}
+                      className="issue-choices"
+                      aria-label={`ההתרשמות שלך מ${party.name} בנושא ${tag}`}
+                    >
+                      {assessments.map((item) => (
+                        <label className="choice-row" key={item.value} htmlFor={`issue-${index}-${item.value}`}>
+                          <RadioGroupItem id={`issue-${index}-${item.value}`} value={item.value} aria-label={item.label} />
+                          <span>{item.label}</span>
+                        </label>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
           {fairReading && <section className="panel fair-reading" aria-labelledby="fair-reading-title">
             <div className="panel-header">
               <h2 id="fair-reading-title">הטיעון בעד · הטיעון נגד</h2>
@@ -252,7 +310,7 @@ export default function PartyDetail({ party }: { party: Party }) {
           </section>
         </aside>
         <div className="section-stack detail-more">
-          <section className="panel" aria-labelledby="voices-title">
+          {(supportingVoices.length > 0 || opposingVoices.length > 0) && <section className="panel" aria-labelledby="voices-title">
             <div className="panel-header"><h2 id="voices-title">מי תומך, מי מסתייג</h2></div>
             <div className="panel-body">
               <p className="muted small" style={{ marginTop: 0, lineHeight: 1.55 }}>הצהרות פומביות עם תאריך ומקור. הכיסוי חלקי.</p>
@@ -261,12 +319,13 @@ export default function PartyDetail({ party }: { party: Party }) {
                 <VoiceColumn title="הצהירו שלא יצביעו לרשימה" items={opposingVoices} empty="עדיין לא אומתה כאן הצהרה אישית נגד הצבעה לרשימה." />
               </div>
             </div>
-          </section>
+          </section>}
           <section className="panel">
             <div className="panel-header"><h2>המצע בקצרה</h2></div>
             <div className="panel-body">
               <p style={{ lineHeight: 1.6 }}>{party.manifestoSummary}</p>
               <p className="muted small" style={{ lineHeight: 1.55 }}>{party.context}</p>
+              {!supportingVoices.length && !opposingVoices.length && <p className="muted small">לא אימתנו כאן עדיין הצהרות אישיות של תומכים או מתנגדים.</p>}
               <div className="link-list">
                 {party.program && <a className="outlink" href={party.program.url} target="_blank" rel="noopener noreferrer">{party.program.label} ↗</a>}
                 {party.extraSources?.map((source) => <a className="outlink" key={source.url} href={source.url} target="_blank" rel="noopener noreferrer">{source.label} ↗</a>)}
@@ -276,38 +335,6 @@ export default function PartyDetail({ party }: { party: Party }) {
               <ul className="source-list">{party.check.map((question) => <li key={question}>{question}</li>)}</ul>
             </div>
           </section>
-          {state && state.priorities.length > 0 && (
-            <section className="panel">
-              <div className="panel-header"><h2>הנושאים שחשובים לי</h2></div>
-              <div className="panel-body">
-                <p className="muted small">סמן מה נראה לך אחרי שבדקת. אפשר גם לבחור ״עוד לא ברור״.</p>
-                {state.priorities.map((tag, index) => (
-                  <div className="issue-row" key={tag}>
-                    <span className="field-label">{tag}</span>
-                    <RadioGroup
-                      value={state.issueAssessments?.[party.slug]?.[tag] ?? ""}
-                      onValueChange={(value) => update((previous) => ({
-                        ...previous,
-                        issueAssessments: {
-                          ...previous.issueAssessments,
-                          [party.slug]: { ...previous.issueAssessments?.[party.slug], [tag]: value },
-                        },
-                      }), "issue_assessment")}
-                      className="issue-choices"
-                      aria-label={`ההתרשמות שלך מ${party.name} בנושא ${tag}`}
-                    >
-                      {assessments.map((item) => (
-                        <label className="choice-row" key={item.value} htmlFor={`issue-${index}-${item.value}`}>
-                          <RadioGroupItem id={`issue-${index}-${item.value}`} value={item.value} aria-label={item.label} />
-                          <span>{item.label}</span>
-                        </label>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
           <section className="panel" id="more-videos">
             <div className="panel-header"><h2>עוד לצפייה</h2></div>
             <div className="panel-body">
@@ -327,6 +354,7 @@ export default function PartyDetail({ party }: { party: Party }) {
           <DialogTitle>טיוטה לשיתוף</DialogTitle>
           <DialogDescription>אפשר לערוך הכול, במיוחד את הסיבה האישית שלך. שום דבר לא מתפרסם אוטומטית.</DialogDescription>
           <label className="field-label" htmlFor="share-draft">הטקסט שלך</label>
+          {(draft ?? note).trim() && !shareDraft.includes("הסיבה האישית שלי:") && <button type="button" className="button secondary share-note-add" onClick={addPersonalNoteToShare}>הוסף את ההערה האישית ששמרתי</button>}
           <textarea
             ref={shareTextarea}
             id="share-draft"

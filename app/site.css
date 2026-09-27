@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }
 body { margin: 0; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
@@ -33,6 +33,16 @@ h2 { font-size: 1.35rem; letter-spacing: -.02em; }
 .load-error h2 { margin-top: 0; }
 .load-error h3 { margin: 26px 0 10px; }
 .load-error-actions,.save-navigation-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.guest-conflict { margin: 0 0 20px; border-color: #bbcafa; background: #f8faff; }
+.guest-conflict h2 { margin-bottom: 9px; }
+.guest-conflict p { line-height: 1.5; }
+.guest-conflict-actions,.data-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
+.data-panel { display: grid; gap: 10px; }
+.data-panel p { line-height: 1.5; margin: 0; }
+.data-panel > a { width: fit-content; margin-top: 14px; }
+.button.danger { background: #a52b3e; }
+.button.danger:hover { background: #872237; }
+.button:disabled { cursor: wait; opacity: .6; }
 .load-error-actions a,.save-navigation-actions a.button { text-decoration: none; }
 .fallback-party-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 10px; padding: 0; list-style: none; }
 .fallback-party-list a { display: block; padding: 12px 14px; border: 1px solid #dbe3ee; border-radius: 10px; background: #fff; text-decoration: none; }
@@ -126,6 +136,9 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .brief-grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 26px; border-top: 1px solid #e1e8f1; padding-top: 18px; }
 .brief-grid .source-list { gap: 12px; }
 .your-note { background: #f2f5fb; border-radius: 10px; padding: 12px; line-height: 1.5; word-break: break-word; }
+.coalition-reflection { margin-top: 15px; border-top: 1px solid #e1e8f1; padding-top: 13px; color: #465a75; line-height: 1.5; }
+.coalition-reflection p { margin: 7px 0; }
+.coalition-reflection small { color: #63738b; }
 .detail-hero { margin: 26px 0 20px; border-radius: 18px; padding: 25px 30px; background: #14264b; color: #fff; border-top: 7px solid var(--party-accent); }
 .detail-hero .eyebrow { color: #b8cbff; }
 .detail-hero h1 { margin: 8px 0; }
@@ -135,6 +148,7 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .share-trigger:focus-visible { outline: 3px solid #91a8f7; outline-offset: 3px; }
 .share-dialog { width: min(94vw, 600px); max-width: 600px; max-height: 90vh; overflow-y: auto; text-align: right; }
 .share-dialog .field-label { margin: 8px 0 0; }
+.share-note-add { width: fit-content; white-space: normal; }
 .share-textarea { min-height: 230px; line-height: 1.6; resize: vertical; }
 .share-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .share-feedback { margin: 0; color: #2444a4; font-size: .9rem; }
@@ -210,6 +224,7 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
 .account-page h1 { margin: 0 0 16px; }
 .account-page .account-lead { font-size: 1.16rem; line-height: 1.6; margin: 0 0 20px; }
 .account-page .account-detail { color: #52647d; line-height: 1.55; margin: 0; }
+.account-page .welcome-cta + .account-detail { margin-top: 18px; }
 .welcome-section { padding: 31px 0 0; }
 .welcome-section-heading { max-width: 780px; }
 .welcome-section-heading h2 { font-size: clamp(1.5rem,2.6vw,2.05rem); margin: 8px 0 12px; }
@@ -252,6 +267,7 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
   .card-action { margin: 0 0 8px; }
   .party-votes { grid-column: 2; display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0 12px 12px 0; }
   .party-card h3 { font-size: 1.14rem; }
+  .guest-conflict-actions .button,.data-actions .button { width: 100%; white-space: normal; }
   .result-intro { padding: 14px 18px 4px; }
   .input-row { flex-wrap: wrap; }
   .input-row .field { flex: 1 1 180px; }
@@ -265,4 +281,7 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
   .welcome-actions a { justify-content: center; }
   .welcome-section { padding-top: 25px; }
   .welcome-alternative-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
