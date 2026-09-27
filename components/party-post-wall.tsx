@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PartyPost } from "@/lib/party-posts";
 
 type XWidgets = { widgets: { createTweet: (id: string, target: HTMLElement, options: Record<string, unknown>) => Promise<HTMLElement | undefined> } };
@@ -22,8 +22,23 @@ function loadWidget(): Promise<XWidgets> {
 }
 
 function PostCard({ post }: { post: PartyPost }) {
+  const card = useRef<HTMLElement>(null);
   const embedTarget = useRef<HTMLDivElement>(null);
+  const autoAttempted = useRef(false);
   const [embedState, setEmbedState] = useState<"idle" | "loading" | "shown" | "error">("idle");
+
+  useEffect(() => {
+    if (!card.current || autoAttempted.current) return;
+    if (typeof IntersectionObserver === "undefined") { autoAttempted.current = true; void showOriginal(); return; }
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries[0]?.isIntersecting || autoAttempted.current) return;
+      autoAttempted.current = true;
+      observer.disconnect();
+      void showOriginal();
+    }, { rootMargin: "80px", threshold: 0.1 });
+    observer.observe(card.current);
+    return () => observer.disconnect();
+  }, [post.url]);
 
   async function showOriginal() {
     if (!embedTarget.current || embedState === "loading") return;
@@ -35,7 +50,7 @@ function PostCard({ post }: { post: PartyPost }) {
       if (!id) throw new Error("Invalid post link");
       embedTarget.current.replaceChildren();
       const result = await Promise.race([
-        widgets.widgets.createTweet(id, embedTarget.current, { lang: "he", dnt: true, conversation: "none", cards: "hidden" }),
+        widgets.widgets.createTweet(id, embedTarget.current, { lang: "he", dnt: true, conversation: "none" }),
         new Promise<undefined>((_, reject) => window.setTimeout(() => reject(new Error("X post timed out")), 8000)),
       ]);
       if (!result) throw new Error("Post unavailable");
@@ -45,19 +60,21 @@ function PostCard({ post }: { post: PartyPost }) {
     }
   }
 
-  return <article className="post-card" dir="rtl">
+  return <article ref={card} className="post-card" dir="rtl" data-has-excerpt={Boolean(post.excerpt)}>
     <div className="post-card-meta"><span className="post-author">{post.author}</span><time dateTime={post.date}>{new Date(`${post.date}T12:00:00Z`).toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</time></div>
+    {post.excerpt && embedState !== "shown" && <div className="post-excerpt-wrap"><span>קטע מהפוסט</span><blockquote className="post-excerpt" dir="auto">{post.excerpt}</blockquote></div>}
+    {embedState === "loading" && <p className="post-embed-loading" role="status">טוען את הפוסט המקורי…</p>}
+    <div ref={embedTarget} className={embedState === "shown" ? "post-embed shown" : "post-embed"} />
     <p className="post-summary">{post.summary}</p>
     <p className="post-reason"><strong>למה כאן?</strong> {post.reason}</p>
     {post.context && <p className="post-context">{post.context}</p>}
     <div className="post-actions">
       <a href={post.url} target="_blank" rel="noopener noreferrer">לפוסט ב־X ↗</a>
       <button type="button" onClick={showOriginal} disabled={embedState === "loading"} aria-pressed={embedState === "shown"}>
-        {embedState === "loading" ? "טוען…" : embedState === "shown" ? "הסתר כאן" : embedState === "error" ? "נסה להציג כאן שוב" : "הצג כאן"}
+        {embedState === "loading" ? "טוען…" : embedState === "shown" ? "הסתר את המקור" : embedState === "error" ? "נסה להציג כאן שוב" : "הצג כאן"}
       </button>
     </div>
-    {embedState === "error" && <p className="post-embed-error">X לא הציג את הפוסט כאן. הקישור המקורי עדיין זמין.</p>}
-    <div ref={embedTarget} className={embedState === "shown" ? "post-embed shown" : "post-embed"} />
+    {embedState === "error" && <p className="post-embed-error">X לא הציג את הפוסט כאן. הציטוט, ההקשר והקישור למקור עדיין זמינים.</p>}
   </article>;
 }
 
@@ -83,7 +100,7 @@ export function PartyPostWall({ posts, partyName, partyColor }: { posts: PartyPo
 
   return <section className="panel post-wall" aria-labelledby={sectionId} style={{ "--party-accent": partyColor } as React.CSSProperties}>
     <div className="post-wall-heading">
-      <div><span className="post-wall-kicker">הקול שלהם, במקור</span><h2 id={sectionId}>פוסטים נבחרים של {partyName}</h2><p>בחירה ידנית של פוסטים משמעותיים מהשנים האחרונות. הסיכומים שלנו, הפוסטים עצמם ב־X.</p></div>
+      <div><span className="post-wall-kicker">הקול שלהם, במקור</span><h2 id={sectionId}>פוסטים נבחרים של {partyName}</h2><p>פוסטים שבחרנו ידנית. המקור נטען מ־X כשמגיעים לאזור, ולצדו הסבר קצר שלנו.</p></div>
       {posts.length > 1 && <div className="post-wall-controls" aria-label="מעבר בין פוסטים">
         <button type="button" onClick={() => goTo(active - 1)} disabled={active === 0} aria-label="לפוסט הקודם">→</button>
         <span aria-live="polite">{active + 1} / {posts.length}</span>
@@ -94,7 +111,7 @@ export function PartyPostWall({ posts, partyName, partyColor }: { posts: PartyPo
       <div className="post-track" ref={track} onScroll={updatePosition} role="region" aria-label={`פוסטים נבחרים של ${partyName}; אפשר להחליק הצידה`} tabIndex={0}>
         {posts.map((post) => <PostCard key={post.url} post={post} />)}
       </div>
-      <p className="post-wall-hint">החליקו הצידה לעוד פוסטים. הצגת הפוסט בתוך האתר טוענת תוכן מ־X.</p>
+      <p className="post-wall-hint">החליקו הצידה לעוד פוסטים. אם X חוסם הצגה, הציטוט, הסיכום והקישור למקור נשארים זמינים.</p>
     </> : <p className="post-wall-empty">עוד לא מצאנו פוסט ישיר ומאומת של הרשימה או מועמדיה שמתאים לאזור הזה. נעדכן כשנמצא מקור טוב.</p>}
   </section>;
 }
