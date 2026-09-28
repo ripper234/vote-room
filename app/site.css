@@ -65,9 +65,9 @@ h2 { font-size: 1.35rem; letter-spacing: -.02em; }
 .comparison-intro p { flex-basis: 100%; margin: 0; line-height: 1.5; }
 .comparison-reset { border: 0; background: none; color: #2444a4; padding: 4px 0; text-decoration: underline; font-weight: 700; }
 .comparison-scroll { overflow-x: auto; border-top: 1px solid #dbe3ee; scrollbar-color: #a9b9d4 #edf2fa; }
-.comparison-table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: max-content; text-align: right; }
-.comparison-table th,.comparison-table td { min-width: 260px; max-width: 400px; padding: 16px; vertical-align: top; border-bottom: 1px solid #e1e8f1; border-inline-start: 1px solid #e1e8f1; line-height: 1.5; white-space: normal; }
-.comparison-table th:first-child { position: sticky; right: 0; z-index: 2; min-width: 132px; max-width: 160px; background: #f6f8fc; }
+.comparison-table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 900px; table-layout: fixed; text-align: right; }
+.comparison-table th,.comparison-table td { padding: 16px; vertical-align: top; border-bottom: 1px solid #e1e8f1; border-inline-start: 1px solid #e1e8f1; line-height: 1.5; overflow-wrap: anywhere; }
+.comparison-table th:first-child { position: sticky; right: 0; z-index: 2; width: 138px; background: #f6f8fc; }
 .comparison-table thead th { background: #f8faff; border-top: 4px solid var(--party-accent, transparent); }
 .comparison-table thead th:first-child { z-index: 3; }
 .comparison-table thead th:not(:first-child) { color: #203779; }
@@ -334,8 +334,9 @@ textarea.field { min-height: 112px; resize: vertical; line-height: 1.5; }
   .date-stamp { display: none; }
 }
 @media (max-width: 600px) {
-  .comparison-table th:first-child { min-width: 110px; max-width: 125px; }
-  .comparison-table th:not(:first-child),.comparison-table td { min-width: 260px; }
+  .comparison-table { min-width: calc(110px + var(--comparison-width)); }
+  .comparison-table th:first-child { width: 110px; }
+  .comparison-table th:not(:first-child) { width: 270px; }
   .comparison-intro,.comparison-footnote,.comparison-empty { padding-inline: 18px; }
   .comparison-cell-name { display: block; color: #203779; margin-bottom: 6px; }
   .comparison-intro .comparison-swipe-hint { display: block; color: #2444a4; font-weight: 700; font-size: .84rem; }

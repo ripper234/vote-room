@@ -17,7 +17,7 @@ export function PartySectionNav({ partyName, sections }: { partyName: string; se
       for (const section of sections) {
         if (desktop && section.id === "my-impression") continue;
         const element = document.getElementById(section.id);
-        if (element && element.getBoundingClientRect().top <= 95) current = section.id;
+        if (element && element.getBoundingClientRect().top <= 150) current = section.id;
       }
       setActive(current);
     }

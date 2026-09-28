@@ -37,7 +37,7 @@ export function PartyComparison({ parties, selectedTopics, assessments, partySta
     party,
     index,
     rating: selfRating(party, selectedTopics, assessments),
-    coverage: topics.filter((topic) => party.highlights.some((item) => item.topic === topic)).length,
+    coverage: selectedTopics.filter((topic) => party.highlights.some((item) => item.topic === topic)).length,
   })).sort((a, b) =>
     Number(partyStatus[b.party.slug] === "positive") - Number(partyStatus[a.party.slug] === "positive") ||
     Number(Boolean(b.rating)) - Number(Boolean(a.rating)) ||
@@ -68,7 +68,7 @@ export function PartyComparison({ parties, selectedTopics, assessments, partySta
       {chosenSlugs.length > 0 && <button type="button" className="comparison-reset" onClick={() => onChooseSlugs([])}>חזרה לבחירה אוטומטית</button>}
     </div>
     {chosen.length ? <div className="comparison-scroll" role="region" aria-label="השוואת רשימות; אפשר לגלול לצדדים" tabIndex={0}>
-      <table className="comparison-table">
+      <table className="comparison-table" style={{ "--comparison-width": `${270 * chosen.length}px` } as React.CSSProperties}>
         <thead><tr><th scope="col">תחום</th>{chosen.map((party, index) => <th scope="col" key={party.slug} style={{ "--party-accent": party.color } as React.CSSProperties}>
           <label className="comparison-selector-label" htmlFor={`comparison-slot-${index}`}>רשימה {index + 1}</label>
           <select id={`comparison-slot-${index}`} aria-label={`רשימה ${index + 1} להשוואה`} value={party.slug} onChange={(event) => choose(index, event.target.value)}>
