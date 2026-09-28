@@ -6,12 +6,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { coalitionChoices, coreParties, netanyahuChoices, orientationChoices, parties, priorityOptions } from "@/lib/parties";
 import { SaveIndicator, SaveNavigationWarning, useDecision } from "@/lib/use-decision";
+import { PartyComparison } from "@/components/party-comparison";
 
 const statusLabels: Record<string, string> = {
-  open: "פתוח לבדיקה",
-  positive: "נראה מתאים",
-  concerned: "יש לי הסתייגויות",
-  out: "לא בכיוון כרגע",
+  open: "עוד בודק/ת",
+  positive: "נראית לי מתאימה",
+  concerned: "יש לי ספקות",
+  out: "לא מתאימה לי",
 };
 const starterPriorities = ["משילות ושירות ציבורי", "כלכלה ויוקר המחיה", "דמוקרטיה וחוקה"];
 
@@ -62,7 +63,7 @@ export default function Home() {
   useEffect(() => {
     if (!justChosePath || !state?.orientation) return;
     const frame = requestAnimationFrame(() => {
-      document.getElementById("parties-title")?.focus();
+      document.getElementById("comparison-title")?.focus();
       setJustChosePath(false);
     });
     return () => cancelAnimationFrame(frame);
@@ -116,7 +117,9 @@ export default function Home() {
       const link = document.createElement("a");
       link.href = url; link.download = "vote-room-guest-data.json"; link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 30000);
-      setConflictMessage("מפת האורח וההיסטוריה שלה הורדו.");
+      setConflictMessage(await dismissGuestConflict()
+        ? "מפת האורח וההיסטוריה שלה הורדו. הבחירה נשמרה."
+        : "הקובץ הורד, אבל הבחירה לא נשמרה. אפשר לבחור להמשיך עם מפת החשבון.");
     } catch { setConflictMessage("ההורדה נכשלה. נסה שוב."); }
   }
 
@@ -178,7 +181,7 @@ export default function Home() {
       <div className="intro">
         <div>
           <span className="eyebrow">מפת בחירה אישית · פתוחה לכולם</span>
-          <h1>{state?.orientation ? "הרשימות לבחירה" : "מאיפה מתחילים?"}</h1>
+          <h1>{state?.orientation ? "השוואת הרשימות שלי" : "מאיפה מתחילים?"}</h1>
           {!state?.orientation && <p>בחר נקודת פתיחה. תמיד אפשר לשנות.</p>}
         </div>
         <span className="date-stamp">מידע על הרשימות: 26.9.2026</span>
@@ -187,7 +190,7 @@ export default function Home() {
         <h2>יש כאן שתי מפות בחירה</h2>
         <p>מוצגת מפת החשבון. בדפדפן הזה שמורה גם מפת אורח שונה. בחר איזו מפה תמשיך איתך; שום מידע לא יוחלף בלי בחירה שלך.</p>
         <div className="guest-conflict-actions">
-          <button type="button" className="button" onClick={dismissGuestConflict}>המשך עם מפת החשבון</button>
+          <button type="button" className="button" onClick={async () => { if (!await dismissGuestConflict()) setConflictMessage("לא הצלחנו לשמור את הבחירה. נסה שוב."); }}>המשך עם מפת החשבון</button>
           <button type="button" className="button secondary" onClick={importGuestMap}>השתמש במפת האורח בחשבון</button>
           <button type="button" className="button secondary" onClick={downloadGuestMap}>הורד גיבוי של מפת האורח</button>
         </div>
@@ -225,7 +228,27 @@ export default function Home() {
       </div>
       <div className="workspace-grid">
         <div className="section-stack">
-          <section className="panel" id="results" aria-labelledby="parties-title">
+          <div className="comparison-tools">
+            {state.orientation === "change" && !showAll && <label className="choice-row">
+              <Checkbox checked={state.includeLieberman} onCheckedChange={(value) => update((previous) => ({ ...previous, includeLieberman: value === true }), "shortlist")} />
+              <span>להשוות גם את ישראל ביתנו <a href="https://www.zman.co.il/727390/" target="_blank" rel="noopener noreferrer">מקור להרכב הרשימות ↗</a></span>
+            </label>}
+            {state.orientation !== "explore" && <button type="button" className="button secondary" onClick={() => setShowAll((value) => !value)}>
+              {showAll ? "חזור למסלול שבחרתי" : "הצג גם רשימות מחוץ למסלול"}
+            </button>}
+          </div>
+          <PartyComparison
+            parties={visible}
+            selectedTopics={selected}
+            assessments={state.issueAssessments ?? {}}
+            partyStatus={state.partyStatus}
+            chosenSlugs={state.comparisonSlugs ?? []}
+            onChooseSlugs={(next) => update((previous) => ({ ...previous, comparisonSlugs: next }), "comparison")}
+            onOpenParty={openParty}
+          />
+          <details className="party-directory" id="results">
+            <summary>כל הרשימות במסלול ({visible.length})</summary>
+          <section className="panel" aria-labelledby="parties-title">
             <div className="panel-header">
               <h2 id="parties-title" tabIndex={-1}>רשימות לבדיקה</h2>
               <span className="result-header-meta"><span className="muted small">{visible.length} רשימות</span><SaveIndicator status={saveState === "error" ? "error" : generalDraft !== null && generalDraft !== state.generalNotes ? "saving" : saveState} retry={retry} /></span>
@@ -243,7 +266,7 @@ export default function Home() {
                 <Fragment key={party.slug}>
                 {hasVotes && (index === 0 || rank(party.slug) !== rank(sortedVisible[index - 1].slug)) && (
                   <div className="party-group-title">
-                    {rank(party.slug) === 0 ? "מתאימות לי" : rank(party.slug) === 2 ? "לא בכיוון כרגע" : "עוד לבדיקה"}
+                    {rank(party.slug) === 0 ? "מתאימות לי" : rank(party.slug) === 2 ? "לא מתאימות לי" : "עוד לא החלטתי"}
                   </div>
                 )}
                 {!hasVotes && (showAll || state.orientation === "explore") && (index === 0 || party.bloc !== sortedVisible[index - 1].bloc) && (
@@ -286,19 +309,7 @@ export default function Home() {
               ))}
             </div>
           </section>
-          {state.orientation === "change" && !showAll && <div className="notice">
-            <strong>בנט ולפיד מתמודדים יחד.</strong> ארבע רשימות מזוהות עם גוש השינוי. אפשר להחליט אם לכלול את ישראל ביתנו בהשוואה.{" "}
-            <a href="https://www.zman.co.il/727390/" target="_blank" rel="noopener noreferrer">מקור להרכב הרשימות ↗</a>
-              <label className="choice-row" style={{ marginTop: 12 }}>
-                <Checkbox checked={state.includeLieberman} onCheckedChange={(value) => update((previous) => ({ ...previous, includeLieberman: value === true }), "shortlist")} />
-                <span>להציג גם את ישראל ביתנו</span>
-              </label>
-          </div>}
-          {state.orientation !== "explore" && (
-            <button type="button" className="button secondary" onClick={() => setShowAll((value) => !value)}>
-              {showAll ? "חזור למסלול שבחרתי" : "ראה גם רשימות מחוץ למסלול"}
-            </button>
-          )}
+          </details>
           <div className="notice" style={{ background: "#fff", borderStyle: "dashed" }}>
             זו לא רשימת כל המתמודדים. אנחנו מוסיפים סיכומים כשיש מקור ברור; היעדר סיכום הוא פער בכיסוי שלנו, לא הוכחה שאין לרשימה עמדה. ההרכב הסופי עשוי להשתנות.{" "}
             <a href="https://www.knesset.tv/main-articles/61384/94592/" target="_blank" rel="noopener noreferrer">לכל הרשימות שהוגשו ↗</a>
@@ -324,7 +335,7 @@ export default function Home() {
                   </span>
                 ))}
               </div>
-              <a className="button result-action" href="#results">חזרה לרשימות ↑</a>
+              <a className="button result-action" href="#comparison">חזרה להשוואה ↑</a>
               <details className="compass-more">
                 <summary>עוד נושאים ושאלות (לא חובה){morePriorities.filter((label) => selected.includes(label)).length ? ` · ${morePriorities.filter((label) => selected.includes(label)).length} מסומנים` : ""}</summary>
                 <p className="muted small">אפשר לבחור נושאים נוספים או לשמור מחשבות. תשובות על שותפות קואליציונית נשמרות אצלך, ולא משנות כרגע את הציון.</p>

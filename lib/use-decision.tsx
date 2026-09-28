@@ -11,7 +11,7 @@ type Pending = {
   kind: string;
   resolve?: (saved: boolean) => void;
 };
-type GuestConflict = { revision: number; state: DecisionState };
+type GuestConflict = { revision: number; state: DecisionState; choiceKind: string };
 
 function getOrCreateKey(): string {
   const existing = window.localStorage.getItem(KEY_STORAGE);
@@ -59,9 +59,8 @@ export function useDecision() {
         current.current = { ...emptyDecision, ...data.state };
         setState(current.current);
         setAccount(data.account);
-        const choice = (() => { try { return window.sessionStorage.getItem("vote-room-guest-choice-v1"); } catch { return null; } })();
         setGuestConflict(data.guestConflict);
-        setGuestConflictDismissed(choice === `${keyRef.current}:${data.guestConflict?.revision}`);
+        setGuestConflictDismissed(false);
         setSaveState("saved");
       })
       .catch(() => {
@@ -199,22 +198,25 @@ export function useDecision() {
     if (previousRecoveryKey) void restoreRecoveryKey(previousRecoveryKey);
   }, [previousRecoveryKey, restoreRecoveryKey]);
 
-  const dismissGuestConflict = useCallback(() => {
-    try { window.sessionStorage.setItem("vote-room-guest-choice-v1", `${keyRef.current}:${guestConflict?.revision}`); } catch {}
-    setGuestConflictDismissed(true);
-  }, [guestConflict]);
+  const dismissGuestConflict = useCallback(async (): Promise<boolean> => {
+    if (!guestConflict) return false;
+    // A no-op account snapshot records this particular guest choice in the
+    // account history. The save queue serializes it with any pending edits.
+    const saved = await update((previous) => previous, guestConflict.choiceKind);
+    if (saved) setGuestConflictDismissed(true);
+    return saved;
+  }, [guestConflict, update]);
 
   const reopenGuestConflict = useCallback(() => {
-    try { window.sessionStorage.removeItem("vote-room-guest-choice-v1"); } catch {}
     setGuestConflictDismissed(false);
   }, []);
 
   const replaceFromGuest = useCallback(async () => {
     if (!guestConflict) return false;
     const saved = await update(() => guestConflict.state, "guest_replace");
-    if (saved) { setGuestConflict(null); dismissGuestConflict(); }
+    if (saved) { setGuestConflict(null); setGuestConflictDismissed(true); }
     return saved;
-  }, [guestConflict, update, dismissGuestConflict]);
+  }, [guestConflict, update]);
 
   useEffect(() => {
     if (!state) return;

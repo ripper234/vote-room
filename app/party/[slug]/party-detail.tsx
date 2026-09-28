@@ -3,24 +3,30 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { coalitionChoices, netanyahuChoices, type Party, type PartyVideo, type PublicVoice } from "@/lib/parties";
 import { fairReadings } from "@/lib/fair-readings";
 import { SaveIndicator, SaveNavigationWarning, useDecision } from "@/lib/use-decision";
 import { partyPosts } from "@/lib/party-posts";
 import { PartyPostWall } from "@/components/party-post-wall";
+import { PartySectionNav, type PartySection } from "@/components/party-section-nav";
 
 const statuses = [
-  { value: "open", label: "פתוח לבדיקה" },
-  { value: "positive", label: "נראה מתאים" },
-  { value: "concerned", label: "יש לי הסתייגויות" },
-  { value: "out", label: "לא בכיוון כרגע" },
+  { value: "positive", label: "נראית לי מתאימה" },
+  { value: "concerned", label: "יש לי ספקות" },
+  { value: "out", label: "לא מתאימה לי" },
+  { value: "open", label: "עוד בודק/ת" },
 ];
 const assessments = [
   { value: "aligned", label: "נראה תואם" },
   { value: "unclear", label: "עוד לא ברור" },
   { value: "misaligned", label: "נראה לא תואם" },
 ];
+const postCoverageNotes: Record<string, string> = {
+  "rz-zehut": "לא מצאנו כאן פוסט מאומת של משה פייגלין. הפוסטים המוצגים הם של בצלאל סמוטריץ׳.",
+  utj: "לא מצאנו כאן פוסט מאומת ועדכני של יעקב אשר. המקורות המוצגים הם מחשבון המפלגה ומחשבון דוברות משנת 2024.",
+  amcha: "לא מצאנו כאן פוסט מאומת של עופר וינטר. הפוסטים המוצגים הם של יוסף חדאד.",
+  joint: "לא מצאנו כאן פוסט מאומת של יוסף ג׳בארין או סאמי אבו שחאדה. הפוסטים המוצגים הם של איימן עודה ואחמד טיבי.",
+};
 
 function Video({ video }: { video: PartyVideo }) {
   const segment = video.excerpt;
@@ -56,7 +62,7 @@ function VoiceColumn({ title, items, empty }: { title: string; items: PublicVoic
       <h3>{title}</h3>
       {items.length ? <ul className="voice-list">{items.map((item) => (
         <li key={`${item.person}-${item.date}`}>
-          <strong>{item.person}</strong><span className="muted small">{item.role} · {item.date}</span>
+          <a className="voice-person" href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`ההצהרה של ${item.person}, נפתחת בחלון חדש`}>{item.person} ↗</a><span className="muted small">{item.role} · {item.date}</span>
           <p>{item.statement}</p>
           <a href={item.url} target="_blank" rel="noopener noreferrer">למקור ההצהרה ↗</a>
         </li>
@@ -73,6 +79,8 @@ export default function PartyDetail({ party }: { party: Party }) {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareDraft, setShareDraft] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
+  const [currentVideo, setCurrentVideo] = useState(0);
+  const [canShareNative, setCanShareNative] = useState(false);
   const shareTextarea = useRef<HTMLTextAreaElement>(null);
   const note = state?.partyNotes[party.slug] ?? "";
   useEffect(() => {
@@ -110,8 +118,20 @@ export default function PartyDetail({ party }: { party: Party }) {
   const supportingVoices = party.publicVoices?.filter((voice) => voice.stance === "support") ?? [];
   const opposingVoices = party.publicVoices?.filter((voice) => voice.stance === "against") ?? [];
   const partnershipSource = party.highlights.find((item) => item.topic === "שותפות עם מפלגות ערביות");
+  const sections: PartySection[] = [
+    { id: "brief", label: "בקצרה" },
+    { id: "party-posts", label: "פוסטים" },
+    { id: "short-videos", label: "סרטונים קצרים" },
+    ...(state?.priorities.length ? [{ id: "my-topics", label: "הנושאים שלי" }] : []),
+    ...(fairReading ? [{ id: "arguments", label: "בעד ונגד" }] : []),
+    { id: "my-impression", label: "ההתרשמות שלי" },
+    ...(supportingVoices.length || opposingVoices.length ? [{ id: "voices", label: "תומכים ומתנגדים" }] : []),
+    { id: "manifesto", label: "המצע" },
+    { id: "more-videos", label: "עוד סרטונים" },
+  ];
 
   function openShare() {
+    setCanShareNative(typeof navigator.share === "function");
     const impression = state?.partyStatus[party.slug];
     const opening = impression === "positive" ? `כרגע ${party.name} נראית לי אפשרות רצינית.`
       : impression === "concerned" ? `אני בודק/ת את ${party.name}, ויש לי גם הסתייגויות.`
@@ -142,11 +162,58 @@ export default function PartyDetail({ party }: { party: Party }) {
     if (!shareDraft.trim()) { setCopyMessage("כתוב משהו לפני ההעתקה."); return; }
     try {
       await navigator.clipboard.writeText(shareDraft);
-      setCopyMessage("הועתק. עכשיו אפשר להדביק בפייסבוק.");
+      setCopyMessage("הטקסט הועתק. אפשר להדביק אותו בכל מקום.");
     } catch {
       shareTextarea.current?.focus();
       shareTextarea.current?.select();
       setCopyMessage("ההעתקה לא הצליחה. הטקסט מסומן כדי שתוכל/י להעתיק ידנית.");
+    }
+  }
+
+  function shareWhatsApp() {
+    if (!shareDraft.trim()) { setCopyMessage("כתוב משהו לפני השיתוף."); return; }
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareDraft)}`, "_blank", "noopener,noreferrer");
+    setCopyMessage("נפתח WhatsApp עם הטקסט שערכת. שום דבר לא נשלח עד שתאשר/י שם.");
+  }
+
+  async function shareFacebook() {
+    if (!shareDraft.trim()) { setCopyMessage("כתוב משהו לפני השיתוף."); return; }
+    const link = `${window.location.origin}/party/${party.slug}`;
+    // Facebook's share dialog accepts a link, while the personal text must be pasted by the user.
+    const clipboard = navigator.clipboard?.writeText(shareDraft) ?? Promise.reject(new Error("clipboard_unavailable"));
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`, "_blank", "noopener,noreferrer");
+    try {
+      await clipboard;
+      setCopyMessage("הטקסט הועתק. הדבק/י אותו בפוסט בפייסבוק וערוך/י אותו שם.");
+    } catch {
+      shareTextarea.current?.focus(); shareTextarea.current?.select();
+      setCopyMessage("פייסבוק נפתח עם הקישור. ההעתקה לא הצליחה; הטקסט מסומן להעתקה ידנית.");
+    }
+  }
+
+  async function shareX() {
+    if (!shareDraft.trim()) { setCopyMessage("כתוב משהו לפני השיתוף."); return; }
+    const link = `${window.location.origin}/party/${party.slug}`;
+    const opening = shareDraft.trim().split(/\n+/)[0] ?? "";
+    const short = `${opening.length > 195 ? `${opening.slice(0, 192).trimEnd()}…` : opening}\n${link}`;
+    const copied = navigator.clipboard?.writeText(shareDraft) ?? Promise.reject(new Error("clipboard_unavailable"));
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(short)}`, "_blank", "noopener,noreferrer");
+    try {
+      await copied;
+      setCopyMessage("נפתחה טיוטה קצרה ב־X. הנוסח המלא הועתק אם תרצה/י לערוך שם.");
+    } catch {
+      setCopyMessage("נפתחה טיוטה קצרה ב־X. הנוסח המלא עדיין כאן לעריכה.");
+    }
+  }
+
+  async function shareNative() {
+    if (!shareDraft.trim()) { setCopyMessage("כתוב משהו לפני השיתוף."); return; }
+    try {
+      await navigator.share({ text: shareDraft });
+      setCopyMessage("נפתח תפריט השיתוף של המכשיר.");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setCopyMessage("השיתוף לא נפתח. אפשר להעתיק את הטקסט או לבחור רשת אחרת.");
     }
   }
 
@@ -158,7 +225,8 @@ export default function PartyDetail({ party }: { party: Party }) {
         <h1>{party.name}</h1>
         <p>{party.leaders} · {party.summary}</p>
       </div>
-      <section className="panel brief-panel" aria-labelledby="brief-title">
+      <PartySectionNav partyName={party.name} sections={sections} />
+      <section className="panel brief-panel" id="brief" aria-labelledby="brief-title">
         <div className="panel-header"><h2 id="brief-title">בקצרה</h2><SaveIndicator status={saveState === "error" ? "error" : draft !== null && draft !== note ? "saving" : saveState} retry={retry} /></div>
         <div className="panel-body">
           <p className="brief-lead">{party.tldr}</p>
@@ -199,29 +267,37 @@ export default function PartyDetail({ party }: { party: Party }) {
           )}
         </div>
       </section>
-      <PartyPostWall posts={partyPosts[party.slug] ?? []} partyName={party.name} partyColor={party.color} />
+      <div id="party-posts"><PartyPostWall posts={partyPosts[party.slug] ?? []} partyName={party.name} partyColor={party.color} coverageNote={postCoverageNotes[party.slug]} /></div>
       <div className="detail-grid">
         <div className="section-stack detail-primary">
-          <section className="panel">
+          <section className="panel" id="short-videos">
             <div className="panel-header"><h2>להקשיב לאנשים · 2–5 דקות</h2></div>
             <div className="panel-body">
-              {featuredVideos.length > 1 ? (
-                <Tabs defaultValue={featuredVideos[0].id}>
-                  <TabsList aria-label="בחר דובר" style={{ marginBottom: 10 }}>
-                    {featuredVideos.map((video) => <TabsTrigger key={video.id} value={video.id}>{video.name}</TabsTrigger>)}
-                  </TabsList>
-                  {featuredVideos.map((video) => <TabsContent key={video.id} value={video.id}><Video video={video} /></TabsContent>)}
-                </Tabs>
-              ) : featuredVideos.length ? <Video video={featuredVideos[0]} /> : <p className="muted small">עדיין לא נבחר כאן קטע קצר שאפשר לאמת. סרטונים ארוכים יותר מופיעים בהמשך הדף.</p>}
+              {featuredVideos.length ? <>
+                <Video key={`${featuredVideos[currentVideo]?.id}-${currentVideo}`} video={featuredVideos[currentVideo] ?? featuredVideos[0]} />
+                <div className="video-playlist">
+                  <h3>סרטונים קצרים <span className="muted small">{featuredVideos.length}</span></h3>
+                  <div className="video-playlist-items" aria-label="בחר סרטון לצפייה">
+                    {featuredVideos.map((video, index) => (
+                      <button type="button" key={`${video.id}-${index}`} className="video-playlist-item" aria-pressed={currentVideo === index} onClick={() => setCurrentVideo(index)}>
+                        <span className="video-playlist-title">{video.title}</span>
+                        <span className="video-playlist-meta">{video.name} · {video.duration}{video.excerpt ? " · קטע מתוך סרטון ארוך" : ""}</span>
+                        {currentVideo === index && <span className="video-playlist-current">צופה עכשיו</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </> : <p className="muted small">עדיין לא נבחר כאן קטע קצר שאפשר לאמת. סרטונים ארוכים יותר מופיעים בהמשך הדף.</p>}
               <div className="video-follow"><span className="field-label">לעקוב אחרי המועמדים</span>
               {party.people.length ? <div className="link-list">{party.people.map((person) => (
                 <a className="outlink" href={person.x} key={person.name} target="_blank" rel="noopener noreferrer">{person.name} ב־X ↗</a>
               ))}</div> : <p className="muted small">לא אומת חשבון אישי של המנהיג בדף הזה. הראיון למעלה הוא דרך להכיר את קולו.</p>}
+              <a className="video-posts-link" href="#party-posts">לפוסטים נבחרים של המועמדים ב־X ↑</a>
               </div>
             </div>
           </section>
           {state && state.priorities.length > 0 && (
-            <section className="panel">
+            <section className="panel" id="my-topics">
               <div className="panel-header"><h2>הנושאים שחשובים לי</h2></div>
               <div className="panel-body">
                 <p className="muted small">סמן מה נראה לך אחרי שבדקת. אפשר גם לבחור ״עוד לא ברור״.</p>
@@ -252,7 +328,7 @@ export default function PartyDetail({ party }: { party: Party }) {
               </div>
             </section>
           )}
-          {fairReading && <section className="panel fair-reading" aria-labelledby="fair-reading-title">
+          {fairReading && <section className="panel fair-reading" id="arguments" aria-labelledby="fair-reading-title">
             <div className="panel-header">
               <h2 id="fair-reading-title">הטיעון בעד · הטיעון נגד</h2>
               <a className="small" href="/about#fair-reading-method">איך ניסחנו את זה?</a>
@@ -282,19 +358,21 @@ export default function PartyDetail({ party }: { party: Party }) {
           </section>}
         </div>
         <aside className="section-stack detail-aside">
-          <section className="panel">
+          <section className="panel" id="my-impression">
             <div className="panel-header"><h2>ההתרשמות שלי</h2><SaveIndicator status={saveState === "error" ? "error" : draft !== null && draft !== note ? "saving" : saveState} retry={retry} /></div>
             {!state ? <div className="panel-body">{saveState === "error" ? <p>המפה האישית לא נטענה. אפשר לקרוא את דף הרשימה ולנסות שוב, או <a href="/account">ליצור חשבון</a>. <button type="button" className="button secondary" onClick={retry}>נסה שוב</button></p> : <div className="loading">טוען את ההתרשמות שלך…</div>}</div> : (
               <div className="panel-body">
-                <span className="field-label">איפה היא עומדת אצלי כרגע?</span>
+                <span className="field-label">מה ההתרשמות שלי כרגע?</span>
+                <p className="muted small" style={{ marginTop: -4 }}>התרשמות אישית, לא החלטת הצבעה. אפשר לשנות בכל רגע.</p>
                 <RadioGroup
                   value={state.partyStatus[party.slug] ?? ""}
                   onValueChange={(value) => update((previous) => ({ ...previous, partyStatus: { ...previous.partyStatus, [party.slug]: value } }), "party_status")}
                   className="choice-list"
                   aria-label="ההתרשמות שלך מהרשימה"
                 >
-                  {statuses.map((item) => <label className="choice-row" key={item.value} htmlFor={`status-${item.value}`}><RadioGroupItem id={`status-${item.value}`} value={item.value} aria-label={item.label} /><span>{item.label}</span></label>)}
+                  {statuses.map((item) => <label className={`choice-row ${item.value === "open" ? "choice-neutral" : ""}`} key={item.value} htmlFor={`status-${item.value}`}><RadioGroupItem id={`status-${item.value}`} value={item.value} aria-label={item.label} /><span>{item.label}</span></label>)}
                 </RadioGroup>
+                {state.partyStatus[party.slug] && <button type="button" className="choice-clear" onClick={() => update((previous) => { const partyStatus = { ...previous.partyStatus }; delete partyStatus[party.slug]; return { ...previous, partyStatus }; }, "party_status")}>נקה בחירה</button>}
                 <hr className="divider" />
                 <label className="field-label" htmlFor="party-note">מה הרגשתי? מה עוד לא ברור?</label>
                 <textarea
@@ -312,8 +390,7 @@ export default function PartyDetail({ party }: { party: Party }) {
             )}
           </section>
         </aside>
-        <div className="section-stack detail-more">
-          {(supportingVoices.length > 0 || opposingVoices.length > 0) && <section className="panel" aria-labelledby="voices-title">
+        {(supportingVoices.length > 0 || opposingVoices.length > 0) && <section className="panel voices-panel" id="voices" aria-labelledby="voices-title">
             <div className="panel-header"><h2 id="voices-title">מי תומך, מי מסתייג</h2></div>
             <div className="panel-body">
               <p className="muted small" style={{ marginTop: 0, lineHeight: 1.55 }}>הצהרות פומביות עם תאריך ומקור. הכיסוי חלקי.</p>
@@ -323,7 +400,8 @@ export default function PartyDetail({ party }: { party: Party }) {
               </div>
             </div>
           </section>}
-          <section className="panel">
+        <div className="section-stack detail-more">
+          <section className="panel" id="manifesto">
             <div className="panel-header"><h2>המצע בקצרה</h2></div>
             <div className="panel-body">
               <p style={{ lineHeight: 1.6 }}>{party.manifestoSummary}</p>
@@ -368,9 +446,14 @@ export default function PartyDetail({ party }: { party: Party }) {
           />
           {copyMessage && <p className="share-feedback" role="status">{copyMessage}</p>}
           <div className="share-actions">
-            <button type="button" className="button" onClick={copyShare}>העתק טקסט</button>
+            <button type="button" className="button" onClick={shareWhatsApp}>WhatsApp</button>
+            <button type="button" className="button secondary" onClick={shareFacebook}>Facebook</button>
+            <button type="button" className="button secondary" onClick={shareX}>X</button>
+            {canShareNative && <button type="button" className="button secondary" onClick={shareNative}>עוד אפשרויות</button>}
+            <button type="button" className="button secondary" onClick={copyShare}>העתק טקסט</button>
             <DialogClose asChild><button type="button" className="button secondary">סגור</button></DialogClose>
           </div>
+          <p className="muted small share-note">WhatsApp מקבל את כל הטקסט. Facebook פותח קישור ומעתיק את הטקסט להדבקה. ב־X נפתחת גרסה קצרה.</p>
         </DialogContent>
       </Dialog>
     </main>

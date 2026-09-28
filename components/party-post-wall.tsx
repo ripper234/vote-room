@@ -56,12 +56,13 @@ function PostCard({ post }: { post: PartyPost }) {
       if (!result) throw new Error("Post unavailable");
       setEmbedState("shown");
     } catch {
+      embedTarget.current?.replaceChildren();
       setEmbedState("error");
     }
   }
 
   return <article ref={card} className="post-card" dir="rtl" data-has-excerpt={Boolean(post.excerpt)}>
-    <div className="post-card-meta"><span className="post-author">{post.author}</span><time dateTime={post.date}>{new Date(`${post.date}T12:00:00Z`).toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</time></div>
+    <div className="post-card-meta"><a className="post-author" href={post.url} target="_blank" rel="noopener noreferrer" aria-label={`לקריאת הפוסט המקורי של ${post.author} ב־X`}>{post.author} ↗</a><time dateTime={post.date}>{new Date(`${post.date}T12:00:00Z`).toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}</time></div>
     {post.excerpt && embedState !== "shown" && <div className="post-excerpt-wrap"><span>קטע מהפוסט</span><blockquote className="post-excerpt" dir="auto">{post.excerpt}</blockquote></div>}
     {embedState === "loading" && <p className="post-embed-loading" role="status">טוען את הפוסט המקורי…</p>}
     <div ref={embedTarget} className={embedState === "shown" ? "post-embed shown" : "post-embed"} />
@@ -74,11 +75,11 @@ function PostCard({ post }: { post: PartyPost }) {
         {embedState === "loading" ? "טוען…" : embedState === "shown" ? "הסתר את המקור" : embedState === "error" ? "נסה להציג כאן שוב" : "הצג כאן"}
       </button>
     </div>
-    {embedState === "error" && <p className="post-embed-error">X לא הציג את הפוסט כאן. הציטוט, ההקשר והקישור למקור עדיין זמינים.</p>}
+    {embedState === "error" && <p className="post-embed-error" role="status">לא הצלחנו להציג כאן את הפוסט מ־X. ייתכן שהפוסט אינו זמין או שהדפדפן חוסם הטמעה. {post.excerpt ? "הציטוט והסיכום" : "הסיכום"} שלמעלה נשארים לקריאה; <a href={post.url} target="_blank" rel="noopener noreferrer">אפשר לנסות לפתוח את הפוסט המקורי ב־X ↗</a>.</p>}
   </article>;
 }
 
-export function PartyPostWall({ posts, partyName, partyColor }: { posts: PartyPost[]; partyName: string; partyColor: string }) {
+export function PartyPostWall({ posts, partyName, partyColor, coverageNote }: { posts: PartyPost[]; partyName: string; partyColor: string; coverageNote?: string }) {
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const sectionId = "party-posts-title";
@@ -100,7 +101,7 @@ export function PartyPostWall({ posts, partyName, partyColor }: { posts: PartyPo
 
   return <section className="panel post-wall" aria-labelledby={sectionId} style={{ "--party-accent": partyColor } as React.CSSProperties}>
     <div className="post-wall-heading">
-      <div><span className="post-wall-kicker">הקול שלהם, במקור</span><h2 id={sectionId}>פוסטים נבחרים של {partyName}</h2><p>פוסטים שבחרנו ידנית. המקור נטען מ־X כשמגיעים לאזור, ולצדו הסבר קצר שלנו.</p></div>
+      <div><span className="post-wall-kicker">הקול שלהם, במקור</span><h2 id={sectionId}>פוסטים נבחרים של {partyName}</h2><p>פוסטים שבחרנו ידנית. המקור נטען מ־X כשמגיעים לאזור, ולצדו הסבר קצר שלנו.</p>{coverageNote && <p style={{ marginTop: 10, color: "#795a0d" }}><strong>כיסוי הפוסטים:</strong> {coverageNote}</p>}</div>
       {posts.length > 1 && <div className="post-wall-controls" aria-label="מעבר בין פוסטים">
         <button type="button" onClick={() => goTo(active - 1)} disabled={active === 0} aria-label="לפוסט הקודם">→</button>
         <span aria-live="polite">{active + 1} / {posts.length}</span>

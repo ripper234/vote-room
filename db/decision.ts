@@ -35,6 +35,13 @@ export async function lastImportedGuestState(userId: string): Promise<DecisionSt
   return row ? JSON.parse(row.snapshot_json) as DecisionState : null;
 }
 
+export async function hasKeptGuestState(userId: string, choiceKind: string): Promise<boolean> {
+  const row = await database().prepare(
+    "SELECT id FROM decision_events WHERE user_id = ? AND kind = ? LIMIT 1"
+  ).bind(userId, choiceKind).first<{ id: number }>();
+  return !!row;
+}
+
 export async function deleteDecisions(userIds: string[]) {
   const db = database();
   await db.batch([...new Set(userIds)].flatMap((userId) => [

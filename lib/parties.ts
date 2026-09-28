@@ -425,6 +425,7 @@ export type DecisionState = {
   partyNotes: Record<string, string>;
   generalNotes: string;
   includeLieberman: boolean;
+  comparisonSlugs: string[];
 };
 
 export const emptyDecision: DecisionState = {
@@ -438,6 +439,7 @@ export const emptyDecision: DecisionState = {
   partyNotes: {},
   generalNotes: "",
   includeLieberman: true,
+  comparisonSlugs: [],
 };
 
 export const orientationChoices = [

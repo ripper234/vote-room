@@ -1,4 +1,4 @@
-import { deleteDecisions, lastImportedGuestState, readDecision, writeDecision } from "../../../db/decision";
+import { deleteDecisions, hasKeptGuestState, lastImportedGuestState, readDecision, writeDecision } from "../../../db/decision";
 import { anonymousUserId, signedInUser } from "../../../lib/decision-identity";
 import { coalitionChoices, netanyahuChoices, orientationChoices, parties, priorityOptions, type DecisionState } from "../../../lib/parties";
 
@@ -9,8 +9,17 @@ const allowedAssessment = new Set(["aligned", "unclear", "misaligned"]);
 const allowedCoalition = new Set(["", ...coalitionChoices.map((choice) => choice.value)]);
 const allowedNetanyahu = new Set(["", ...netanyahuChoices.map((choice) => choice.value)]);
 const allowedOrientation = new Set(["", ...orientationChoices.map((choice) => choice.value)]);
-const stateFields = new Set(["orientation", "priorities", "customTags", "arabCoalition", "netanyahuCoalition", "partyStatus", "issueAssessments", "partyNotes", "generalNotes", "includeLieberman"]);
+const stateFields = new Set(["orientation", "priorities", "customTags", "arabCoalition", "netanyahuCoalition", "partyStatus", "issueAssessments", "partyNotes", "generalNotes", "includeLieberman", "comparisonSlugs"]);
 const MAX_BODY_BYTES = 150_000;
+
+async function guestChoiceKind(anonymousId: string, state: DecisionState): Promise<string> {
+  // A choice belongs to one guest map and its contents. A later guest edit
+  // changes the digest, while account edits do not reopen an old choice.
+  const input = new TextEncoder().encode(`${anonymousId}:${JSON.stringify(state)}`);
+  const digest = await crypto.subtle.digest("SHA-256", input);
+  const fingerprint = Array.from(new Uint8Array(digest).slice(0, 14), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `guest_keep_${fingerprint}`;
+}
 
 function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -69,7 +78,10 @@ function validState(input: unknown): input is DecisionState {
     ) &&
     textMap(state.partyNotes, 5000) &&
     typeof state.generalNotes === "string" && state.generalNotes.length <= 10000 &&
-    typeof state.includeLieberman === "boolean";
+    typeof state.includeLieberman === "boolean" &&
+    Array.isArray(state.comparisonSlugs) && state.comparisonSlugs.length <= 3 &&
+    new Set(state.comparisonSlugs).size === state.comparisonSlugs.length &&
+    state.comparisonSlugs.every((slug) => typeof slug === "string" && allowedSlugs.has(slug));
 }
 
 const priorityOptionsSet = new Set(priorityOptions);
@@ -83,7 +95,7 @@ export async function GET(request: Request) {
   try {
     let decision = await readDecision(userId);
     let imported = false;
-    let guestConflict: { revision: number; state: DecisionState } | null = null;
+    let guestConflict: { revision: number; state: DecisionState; choiceKind: string } | null = null;
     // A first sign-in adopts the visitor's existing device map. A returning
     // account always wins; its history is never replaced by a device copy.
     if (account && decision.revision === 0 && anonymousId) {
@@ -99,7 +111,10 @@ export async function GET(request: Request) {
       if (guest.revision > 0 && JSON.stringify(guest.state) !== JSON.stringify(decision.state)) {
         const importedState = await lastImportedGuestState(account.id);
         if (JSON.stringify(importedState) !== JSON.stringify(guest.state)) {
-          guestConflict = { revision: guest.revision, state: guest.state };
+          const choiceKind = await guestChoiceKind(anonymousId, guest.state);
+          if (!await hasKeptGuestState(account.id, choiceKind)) {
+            guestConflict = { revision: guest.revision, state: guest.state, choiceKind };
+          }
         }
       }
     }

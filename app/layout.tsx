@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import SignOutLink from "@/components/sign-out-link";
+import FeedbackButton from "@/components/feedback-button";
 import { chatGPTSignOutPath, getChatGPTUser } from "./chatgpt-auth";
 import "./globals.css";
 import "./site.css";
@@ -23,7 +24,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <Link className="brand" href="/"><span className="brand-mark" aria-hidden="true">✓</span>חדר בחירה</Link>
             <nav className="nav" aria-label="ניווט ראשי">
               <a href="/map">המפה שלי</a>
-              <a href="/roadmap">לאן ממשיכים</a>
               {user
                 ? <SignOutLink href={chatGPTSignOutPath("/")} />
                 : <a href="/account">יצירת חשבון</a>}
@@ -35,11 +35,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <div className="shell footer-inner">
             <span>לחשוב יחד, לבחור בעצמך.</span>
             <a href="/about">אודות והרעיון מאחורי האתר</a>
-            <a href="/roadmap">לאן ממשיכים</a>
+            <a href="/roadmap">מה עוד מתוכנן לאתר</a>
             <a href="/data">הנתונים שלי</a>
             <a href="https://github.com/ripper234/vote-room" target="_blank" rel="noopener noreferrer">הקוד הפתוח ב־GitHub ↗</a>
           </div>
         </footer>
+        <FeedbackButton />
       </body>
     </html>
   );
