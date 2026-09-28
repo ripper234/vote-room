@@ -25,6 +25,7 @@ function PostCard({ post }: { post: PartyPost }) {
   const card = useRef<HTMLElement>(null);
   const embedTarget = useRef<HTMLDivElement>(null);
   const autoAttempted = useRef(false);
+  const loading = useRef(false);
   const [embedState, setEmbedState] = useState<"idle" | "loading" | "shown" | "error">("idle");
 
   useEffect(() => {
@@ -41,9 +42,11 @@ function PostCard({ post }: { post: PartyPost }) {
   }, [post.url]);
 
   async function showOriginal() {
-    if (!embedTarget.current || embedState === "loading") return;
+    if (!embedTarget.current || loading.current) return;
     if (embedState === "shown") { embedTarget.current.replaceChildren(); setEmbedState("idle"); return; }
+    loading.current = true;
     setEmbedState("loading");
+    let timeout = 0;
     try {
       const widgets = await loadWidget();
       const id = post.url.match(/\/status\/(\d+)/)?.[1];
@@ -51,13 +54,16 @@ function PostCard({ post }: { post: PartyPost }) {
       embedTarget.current.replaceChildren();
       const result = await Promise.race([
         widgets.widgets.createTweet(id, embedTarget.current, { lang: "he", dnt: true, conversation: "none" }),
-        new Promise<undefined>((_, reject) => window.setTimeout(() => reject(new Error("X post timed out")), 8000)),
+        new Promise<undefined>((_, reject) => { timeout = window.setTimeout(() => reject(new Error("X post timed out")), 8000); }),
       ]);
       if (!result) throw new Error("Post unavailable");
       setEmbedState("shown");
     } catch {
       embedTarget.current?.replaceChildren();
       setEmbedState("error");
+    } finally {
+      if (timeout) window.clearTimeout(timeout);
+      loading.current = false;
     }
   }
 
