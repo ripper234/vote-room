@@ -38,6 +38,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <a href="/roadmap">מה עוד מתוכנן לאתר</a>
             <a href="/data">הנתונים שלי</a>
             <a href="https://github.com/ripper234/vote-room" target="_blank" rel="noopener noreferrer">הקוד הפתוח ב־GitHub ↗</a>
+            <a href="https://www.facebook.com/share/g/1EfWByqptf/" target="_blank" rel="noopener noreferrer">פוליטיקה מקרבת ↗</a>
           </div>
         </footer>
         <FeedbackButton />
